@@ -70,7 +70,9 @@ class ofOpenALSoundPlayer : public ofBaseSoundPlayer, public ofThread {
 		bool getIsPlaying();
 		float getSpeed();
 		float getPan();
+        float getVolume();
 		bool getIsPaused();
+		bool isLoaded();
 
 		static void initialize();
 		static void close();

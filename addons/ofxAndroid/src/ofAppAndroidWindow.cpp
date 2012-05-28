@@ -23,6 +23,8 @@ extern "C"{
 #include "ofFileUtils.h"
 
 static bool paused=true;
+static bool surfaceDestroyed=false;
+static bool firstLoad=true;
 
 
 static int  sWindowWidth  = 480;
@@ -217,7 +219,7 @@ void ofAppAndroidWindow::setThreadedEvents(bool threadedEvents){
 void reloadTextures(){
 	ofUpdateBitmapCharacterTexture();
 	ofReloadAllImageTextures();
-	//ofReloadAllFontTextures();
+	ofReloadAllFontTextures();
 	ofResumeVideoGrabbers();
 }
 
@@ -246,10 +248,9 @@ Java_cc_openframeworks_OFAndroid_setAppDataDir( JNIEnv*  env, jobject  thiz, jst
     __android_log_print(ANDROID_LOG_INFO,"OF",("app name: " + appname).c_str());
     if(appname!=""){
 		string resources_name = ofToLower(appname + "resources.zip");
-		__android_log_print(ANDROID_LOG_INFO,"OF",("uncompressing " + resources_name).c_str());
 		ofFile resources(resources_name);
-		__android_log_print(ANDROID_LOG_INFO,"OF",("uncompressing " + resources.getAbsolutePath()).c_str());
 		if(resources.exists()){
+			__android_log_print(ANDROID_LOG_DEBUG,"OF",("uncompressing " + resources.getAbsolutePath()).c_str());
 			unzFile zip = unzOpen(resources.getAbsolutePath().c_str());
 			char current_dir[1000];
 			getcwd(current_dir,1000);
@@ -270,23 +271,20 @@ Java_cc_openframeworks_OFAndroid_onRestart( JNIEnv*  env, jobject  thiz ){
 void
 Java_cc_openframeworks_OFAndroid_onPause( JNIEnv*  env, jobject  thiz ){
 	paused = true;
-
-	if(androidApp) androidApp->pause();
-	ofUnloadAllFontTextures();
-	ofPauseVideoGrabbers();
 	ofxAndroidSoundStreamPause();
+	if(androidApp) androidApp->pause();
 }
 
 void
 Java_cc_openframeworks_OFAndroid_onResume( JNIEnv*  env, jobject  thiz ){
+	if(paused){
+		if(androidApp){
+			androidApp->resume();
+		}
+		ofxAndroidSoundStreamResume();
 
-	/*reloadTextures();
-	if(androidApp){
-		androidApp->resume();
-		androidApp->reloadTextures();
+		paused = false;
 	}
-	paused = false;*/
-	ofxAndroidSoundStreamResume();
 }
 
 void
@@ -302,23 +300,30 @@ Java_cc_openframeworks_OFAndroid_onDestroy( JNIEnv*  env, jclass  thiz ){
 
 void
 Java_cc_openframeworks_OFAndroid_onSurfaceDestroyed( JNIEnv*  env, jclass  thiz ){
-	paused = true;
+	surfaceDestroyed = true;
 	ofLog(OF_LOG_NOTICE,"onSurfaceDestroyed");
 	ofUnloadAllFontTextures();
 	ofPauseVideoGrabbers();
-	ofPushStyle();
 }
 
 void
 Java_cc_openframeworks_OFAndroid_onSurfaceCreated( JNIEnv*  env, jclass  thiz ){
 	ofLog(OF_LOG_NOTICE,"onSurfaceCreated");
+	if(firstLoad){
+		firstLoad=false;
+		return;
+	}
+	if(!surfaceDestroyed){
+		ofUnloadAllFontTextures();
+		ofPauseVideoGrabbers();
+	}
 	reloadTextures();
 	if(androidApp){
-		androidApp->resume();
 		androidApp->reloadTextures();
 	}
-	ofPopStyle();
-	paused = false;
+	ofSetStyle(ofGetStyle());
+	surfaceDestroyed = false;
+
 }
 
 void
@@ -354,7 +359,7 @@ Java_cc_openframeworks_OFAndroid_render( JNIEnv*  env, jclass  thiz )
 {
 	unsigned long beginFrameMicros = ofGetElapsedTimeMicros();
 
-	if(paused) return;
+	if(paused || surfaceDestroyed) return;
 
 	lastFrameTime = double(beginFrameMicros - previousFrameMicros)/1000000.;
 
@@ -365,16 +370,16 @@ Java_cc_openframeworks_OFAndroid_render( JNIEnv*  env, jclass  thiz )
 		while(!touchEventArgsQueue.empty()){
 			switch(touchEventArgsQueue.front().type){
 			case ofTouchEventArgs::down:
-				ofNotifyEvent(ofEvents.touchDown,touchEventArgsQueue.front());
+				ofNotifyEvent(ofEvents().touchDown,touchEventArgsQueue.front());
 				break;
 			case ofTouchEventArgs::up:
-				ofNotifyEvent(ofEvents.touchUp,touchEventArgsQueue.front());
+				ofNotifyEvent(ofEvents().touchUp,touchEventArgsQueue.front());
 				break;
 			case ofTouchEventArgs::move:
-				ofNotifyEvent(ofEvents.touchMoved,touchEventArgsQueue.front());
+				ofNotifyEvent(ofEvents().touchMoved,touchEventArgsQueue.front());
 				break;
 			case ofTouchEventArgs::doubleTap:
-				ofNotifyEvent(ofEvents.touchDoubleTap,touchEventArgsQueue.front());
+				ofNotifyEvent(ofEvents().touchDoubleTap,touchEventArgsQueue.front());
 				break;
 			}
 			touchEventArgsQueue.pop();
@@ -430,7 +435,7 @@ Java_cc_openframeworks_OFAndroid_onTouchDown(JNIEnv*  env, jclass  thiz, jint id
 	touch.pressure = pressure;
 	touch.type = ofTouchEventArgs::down;
 	if(threadedTouchEvents){
-		ofNotifyEvent(ofEvents.touchDown,touch);
+		ofNotifyEvent(ofEvents().touchDown,touch);
 	}else{
 		mutex.lock();
 		touchEventArgsQueue.push(touch);
@@ -448,7 +453,7 @@ Java_cc_openframeworks_OFAndroid_onTouchUp(JNIEnv*  env, jclass  thiz, jint id,j
 	touch.pressure = pressure;
 	touch.type = ofTouchEventArgs::up;
 	if(threadedTouchEvents){
-		ofNotifyEvent(ofEvents.touchUp,touch);
+		ofNotifyEvent(ofEvents().touchUp,touch);
 	}else{
 		mutex.lock();
 		touchEventArgsQueue.push(touch);
@@ -467,7 +472,7 @@ Java_cc_openframeworks_OFAndroid_onTouchMoved(JNIEnv*  env, jclass  thiz, jint i
 	touch.pressure = pressure;
 	touch.type = ofTouchEventArgs::move;
 	if(threadedTouchEvents){
-		ofNotifyEvent(ofEvents.touchMoved,touch);
+		ofNotifyEvent(ofEvents().touchMoved,touch);
 	}else{
 		mutex.lock();
 		touchEventArgsQueue.push(touch);
@@ -485,7 +490,7 @@ Java_cc_openframeworks_OFAndroid_onTouchDoubleTap(JNIEnv*  env, jclass  thiz, ji
 	touch.pressure = pressure;
 	touch.type = ofTouchEventArgs::doubleTap;
 	if(threadedTouchEvents){
-		ofNotifyEvent(ofEvents.touchDoubleTap,touch);
+		ofNotifyEvent(ofEvents().touchDoubleTap,touch);
 	}else{
 		mutex.lock();
 		touchEventArgsQueue.push(touch);

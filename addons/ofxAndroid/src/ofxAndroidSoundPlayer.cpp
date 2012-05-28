@@ -6,7 +6,6 @@
 ofxAndroidSoundPlayer::ofxAndroidSoundPlayer(){
 	javaSoundPlayer = NULL;
 
-
 }
 
 //------------------------------------------------------------
@@ -43,6 +42,8 @@ void ofxAndroidSoundPlayer::loadSound(string fileName, bool stream){
 			ofLog(OF_LOG_ERROR,"Failed to create java SoundPlayer");
 			return;
 		}
+
+		javaSoundPlayer = (jobject)env->NewGlobalRef(javaSoundPlayer);
 	}
 
 	jmethodID javaLoadMethod = env->GetMethodID(javaClass,"loadSound","(Ljava/lang/String;Z)V");
@@ -53,7 +54,7 @@ void ofxAndroidSoundPlayer::loadSound(string fileName, bool stream){
 
 	jstring javaFileName = ofGetJNIEnv()->NewStringUTF(ofToDataPath(fileName,true).c_str());
 	env->CallVoidMethod(javaSoundPlayer,javaLoadMethod,javaFileName,stream);
-
+	env->DeleteLocalRef((jobject)javaFileName);
 }
 
 //------------------------------------------------------------
@@ -424,4 +425,45 @@ bool ofxAndroidSoundPlayer::getIsPaused(){
 
 	return env->CallBooleanMethod(javaSoundPlayer,javaPausedMethod);
 
+}
+
+float ofxAndroidSoundPlayer::getVolume(){
+	if(!javaSoundPlayer){
+		ofLogError() << "cannot get volume on an unloaded sound player";
+		return 0;
+	}
+	JNIEnv *env = ofGetJNIEnv();
+	if (!env) {
+		ofLog(OF_LOG_ERROR,"Failed to get the environment using GetEnv()");
+		return 0;
+	}
+
+	jmethodID javaVolumeMethod = env->GetMethodID(javaClass,"getVolume","(V)F");
+	if(!javaVolumeMethod){
+		ofLog(OF_LOG_ERROR,"Failed to get the java getVolume for SoundPlayer");
+		return 0;
+	}
+
+	return env->CallFloatMethod(javaSoundPlayer,javaVolumeMethod);
+}
+
+
+bool ofxAndroidSoundPlayer::isLoaded(){
+	if(!javaSoundPlayer){
+		ofLogError() << "cannot get loaded state on an unloaded sound player";
+		return 0;
+	}
+	JNIEnv *env = ofGetJNIEnv();
+	if (!env) {
+		ofLog(OF_LOG_ERROR,"Failed to get the environment using GetEnv()");
+		return 0;
+	}
+
+	jmethodID javaIsLoadedMethod = env->GetMethodID(javaClass,"isLoaded","(V)Z");
+	if(!javaIsLoadedMethod){
+		ofLog(OF_LOG_ERROR,"Failed to get the java isLoaded for SoundPlayer");
+		return 0;
+	}
+
+	return env->CallBooleanMethod(javaSoundPlayer,javaIsLoadedMethod);
 }

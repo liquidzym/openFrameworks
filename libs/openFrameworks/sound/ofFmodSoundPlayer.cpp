@@ -132,7 +132,7 @@ float * ofFmodSoundGetSpectrum(int nBands){
 ofFmodSoundPlayer::ofFmodSoundPlayer(){
 	bLoop 			= false;
 	bLoadedOk 		= false;
-	pan 			= 0.5f;
+	pan 			= 0;
 	volume 			= 1.0f;
 	internalFreq 	= 44100;
 	speed 			= 1;
@@ -217,6 +217,7 @@ void ofFmodSoundPlayer::unloadSound(){
 	if (bLoadedOk){
 		stop();						// try to stop the sound
 		if(!isStreaming)FMOD_Sound_Release(sound);
+		bLoadedOk = false;
 	}
 }
 
@@ -238,6 +239,16 @@ float ofFmodSoundPlayer::getSpeed(){
 //------------------------------------------------------------
 float ofFmodSoundPlayer::getPan(){
 	return pan;
+}
+
+//------------------------------------------------------------
+float ofFmodSoundPlayer::getVolume(){
+	return volume;
+}
+
+//------------------------------------------------------------
+bool ofFmodSoundPlayer::isLoaded(){
+	return bLoadedOk;
 }
 
 //------------------------------------------------------------

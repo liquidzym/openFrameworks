@@ -8,12 +8,14 @@ public class OFAndroidSoundPlayer extends OFAndroidObject{
 		pan = 0.5f;
 		volume = 1;
 		player = new MediaPlayer();
+		bIsLoaded = false;
 	}
 	
 	void loadSound(String fileName, boolean stream){
 		try {
 			player.setDataSource(fileName);
 			player.prepare();
+			bIsLoaded = true;
 		} catch (Exception e) {
 			Log.e("OF","couldn't load " + fileName,e);
 		} 
@@ -42,6 +44,10 @@ public class OFAndroidSoundPlayer extends OFAndroidObject{
         float leftVol  = (float)((cosAngle - sinAngle) * 0.7071067811865475); // multiplied by sqrt(2)/2
         float rightVol = (float)((cosAngle + sinAngle) * 0.7071067811865475); // multiplied by sqrt(2)/2
 		player.setVolume(leftVol*vol, rightVol*vol);
+	}
+	
+	float getVolume(){
+		return volume;
 	}
 	
 	void setPan(float vol){
@@ -94,6 +100,10 @@ public class OFAndroidSoundPlayer extends OFAndroidObject{
 	float getPan(){
 		return pan/2.f+1;
 	}
+	
+	boolean isLoaded(){
+		return bIsLoaded;
+	}
 
 	@Override
 	protected void appPause() {
@@ -114,5 +124,6 @@ public class OFAndroidSoundPlayer extends OFAndroidObject{
 	private MediaPlayer player;
 	private float pan;
 	private float volume;
+	private boolean bIsLoaded;
 
 }
