@@ -249,7 +249,7 @@ public:
 	
 	virtual void 				setPaused(bool bPause);
 	virtual void 				setPosition(float pct);
-	virtual void 				setVolume(int volume);
+	virtual void 				setVolume(float volume); // 0..1
 	virtual void 				setLoopState(ofLoopType state);
 	virtual void   				setSpeed(float speed);
 	virtual void				setFrame(int frame);  // frame 0 = first frame...
@@ -262,7 +262,7 @@ public:
 	virtual void				nextFrame();
 	virtual void				previousFrame();
 	virtual void				setPixelFormat(ofPixelFormat pixelFormat);
-	
+	virtual ofPixelFormat 		getPixelFormat();
 };
 
 //----------------------------------------------------------

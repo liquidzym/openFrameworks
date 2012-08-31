@@ -17,6 +17,11 @@
 	#define OF_VID_GRABBER_TYPE ofQuickTimeGrabber
 #endif
 
+#ifdef OF_VIDEO_CAPTURE_QTKIT
+	#include "ofQTKitGrabber.h"
+	#define OF_VID_GRABBER_TYPE ofQTKitGrabber
+#endif
+
 #ifdef OF_VIDEO_CAPTURE_DIRECTSHOW
 	#include "ofDirectShowGrabber.h"
 	#define OF_VID_GRABBER_TYPE ofDirectShowGrabber
@@ -45,7 +50,7 @@ class ofVideoGrabber : public ofBaseVideoGrabber,public ofBaseVideoDraws{
 		void				listDevices();
 		bool				isFrameNew();
 		void				update();
-		void				grabFrame();
+		OF_DEPRECATED_MSG("Use ofVideoGrabber::update() instead.", void grabFrame());
 		void				close();	
 		bool				initGrabber(int w, int h){return initGrabber(w,h,true);}
 		bool				initGrabber(int w, int h, bool bTexture);

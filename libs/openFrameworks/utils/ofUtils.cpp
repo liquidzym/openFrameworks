@@ -43,23 +43,24 @@ static unsigned long startTime = ofGetSystemTime();   //  better at the first fr
 static unsigned long startTimeMicros = ofGetSystemTimeMicros();
 
 //--------------------------------------
-int ofGetElapsedTimeMillis(){
-	return (int)(ofGetSystemTime() - startTime);
+unsigned long ofGetElapsedTimeMillis(){
+	return ofGetSystemTime() - startTime;
 }
 
 //--------------------------------------
 unsigned long ofGetElapsedTimeMicros(){
-	return (int)(ofGetSystemTimeMicros() - startTimeMicros);
+	return ofGetSystemTimeMicros() - startTimeMicros;
 }
 
 //--------------------------------------
 float ofGetElapsedTimef(){
-	return ((float) ((int)(ofGetSystemTime() - startTime)) / 1000.0f);
+	return ofGetElapsedTimeMicros() / 1000000.0f;
 }
 
 //--------------------------------------
 void ofResetElapsedTimeCounter(){
 	startTime = ofGetSystemTime();
+	startTimeMicros = ofGetSystemTimeMicros();
 }
 
 //=======================================
@@ -302,7 +303,7 @@ string ofToHex(const string& value) {
 	int numBytes = value.size();
 	for(int i = 0; i < numBytes; i++) {
 		// print each byte as a 2-character wide hex value
-		out << setfill('0') << setw(2) << hex << (unsigned int) value[i];
+		out << setfill('0') << setw(2) << hex << (unsigned int) ((unsigned char)value[i]);
 	}
 	return out.str();
 }
@@ -340,10 +341,14 @@ char ofHexToChar(const string& charHexString) {
 
 //----------------------------------------
 float ofHexToFloat(const string& floatHexString) {
-	int x = 0;
+	union intFloatUnion {
+		int x;
+		float f;
+	} myUnion;
+	myUnion.x = 0;
 	istringstream cur(floatHexString);
-	cur >> hex >> x;
-	return *((float*) &x);
+	cur >> hex >> myUnion.x;
+	return myUnion.f;
 }
 
 //----------------------------------------
@@ -436,15 +441,13 @@ char ofBinaryToChar(const string& value) {
 float ofBinaryToFloat(const string& value) {
 	const int floatSize = sizeof(float) * 8;
 	bitset<floatSize> binaryString(value);
-	unsigned long result = binaryString.to_ulong();
-	// this line means:
-	// 1 take the address of the unsigned long
-	// 2 pretend it is the address of a float
-	// 3 then use it as a float
-	// this is a bit-for-bit 'typecast'
-	return *((float*) &result);
+	union ulongFloatUnion {
+			unsigned long result;
+			float f;
+	} myUFUnion;
+	myUFUnion.result = binaryString.to_ulong();
+	return myUFUnion.f;
 }
-
 //----------------------------------------
 string ofBinaryToString(const string& value) {
 	ostringstream out;
@@ -590,10 +593,11 @@ string ofVAArgsToString(const char * format, va_list args){
 void ofLaunchBrowser(string url){
 
 	// http://support.microsoft.com/kb/224816
-
+    
 	//make sure it is a properly formatted url
-	if(url.substr(0,7) != "http://"){
-		ofLog(OF_LOG_WARNING, "ofLaunchBrowser: url must begin http://");
+	if(Poco::icompare(url.substr(0,7), "http://") != 0 &&
+       Poco::icompare(url.substr(0,8), "https://") != 0) {
+		ofLog(OF_LOG_WARNING, "ofLaunchBrowser: url must begin http:// or https://");
 		return;
 	}
 
