@@ -57,6 +57,7 @@ void ofLoadMatrix (const ofMatrix4x4 & m);   // Andreas: I've included both a of
 void ofLoadMatrix (const float *m);			// ideally we would always use ofMatrix4x4, but in a lot of temporary
 void ofMultMatrix (const ofMatrix4x4 & m);	// ofMatrix4x4 objects when interacting with non-OF code
 void ofMultMatrix (const float *m);
+void ofSetMatrixMode (ofMatrixMode matrixMode);
 
 // screen coordinate things / default gl values
 void ofSetupGraphicDefaults();
@@ -203,6 +204,7 @@ OF_DEPRECATED_MSG("Use ofVertices instead.", void ofVertexes(const vector <ofPoi
 
 
 void ofCurveVertex(float x, float y);
+void ofCurveVertex(float x, float y, float z);
 void ofCurveVertex(ofPoint & p);
 void ofCurveVertices(const vector <ofPoint> & curvePoints);
 OF_DEPRECATED_MSG("Use ofCurveVertices instead.", void ofCurveVertexes(const vector <ofPoint> & curvePoints));

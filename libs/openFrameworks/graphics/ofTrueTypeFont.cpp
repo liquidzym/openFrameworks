@@ -554,14 +554,15 @@ float ofTrueTypeFont::getSpaceSize(){
 ofTTFCharacter ofTrueTypeFont::getCharacterAsPoints(int character){
 	if( bMakeContours == false ){
 		ofLog(OF_LOG_ERROR, "getCharacterAsPoints: contours not created,  call loadFont with makeContours set to true" );
+            return ofTTFCharacter();
 	}
-
-	if( bMakeContours && (int)charOutlines.size() > 0 && character >= NUM_CHARACTER_TO_START && character - NUM_CHARACTER_TO_START < (int)charOutlines.size() ){
-		return charOutlines[character-NUM_CHARACTER_TO_START];
-	}else{
-		if(charOutlines.empty())charOutlines.push_back(ofTTFCharacter());
-		return charOutlines[0];
-	}
+    if (character - NUM_CHARACTER_TO_START >= nCharacters || character < NUM_CHARACTER_TO_START){
+        ofLog(OF_LOG_ERROR,"Error : char (%i) not allocated -- line %d in %s", (character + NUM_CHARACTER_TO_START), __LINE__,__FILE__);
+        
+        return ofTTFCharacter();
+    }
+    
+    return charOutlines[character - NUM_CHARACTER_TO_START];
 }
 
 //-----------------------------------------------------------
@@ -623,20 +624,18 @@ vector<ofTTFCharacter> ofTrueTypeFont::getStringAsPoints(string str){
 	while(index < len){
 		int cy = (unsigned char)str[index] - NUM_CHARACTER_TO_START;
 		if (cy < nCharacters){ 			// full char set or not?
-		  if (str[index] == '\n') {
-
+			if (str[index] == '\n') {
 				Y += lineHeight;
 				X = 0 ; //reset X Pos back to zero
-
-		  }else if (str[index] == ' ') {
-				 int cy = (int)'p' - NUM_CHARACTER_TO_START;
-				 X += cps[cy].setWidth * letterSpacing * spaceSize;
-		  } else {
-			  	shapes.push_back(getCharacterAsPoints(str[index]));
-			  	shapes.back().translate(ofPoint(X,Y));
+			}else if (str[index] == ' ') {
+				int cy = (int)'p' - NUM_CHARACTER_TO_START;
+				X += cps[cy].setWidth * letterSpacing * spaceSize;
+			} else if(cy > -1){
+				shapes.push_back(getCharacterAsPoints(str[index]));
+				shapes.back().translate(ofPoint(X,Y));
 
 				X += cps[cy].setWidth * letterSpacing;
-		  }
+			}
 		}
 		index++;
 	}
@@ -652,8 +651,7 @@ void ofTrueTypeFont::drawCharAsShape(int c, float x, float y) {
 	}
 	//-----------------------
 
-	int cu = c;
-	ofTTFCharacter & charRef = charOutlines[cu];
+	ofTTFCharacter & charRef = charOutlines[c - NUM_CHARACTER_TO_START];
 	charRef.setFilled(ofGetStyle().bFill);
 	charRef.draw(x,y);
 }
@@ -702,7 +700,7 @@ ofRectangle ofTrueTypeFont::getStringBoundingBox(string c, float x, float y){
 	     		int cy = (int)'p' - NUM_CHARACTER_TO_START;
 				 xoffset += cps[cy].setWidth * letterSpacing * spaceSize;
 				 // zach - this is a bug to fix -- for now, we don't currently deal with ' ' in calculating string bounding box
-		  } else {
+		  } else if(cy > -1){
                 GLint height	= cps[cy].height;
             	GLint bwidth	= cps[cy].width * letterSpacing;
             	GLint top		= cps[cy].topExtent - cps[cy].height;
@@ -779,7 +777,7 @@ void ofTrueTypeFont::drawString(string c, float x, float y) {
 		  }else if (c[index] == ' ') {
 				 int cy = (int)'p' - NUM_CHARACTER_TO_START;
 				 X += cps[cy].setWidth * letterSpacing * spaceSize;
-		  } else {
+		  } else if(cy > -1){
 				drawChar(cy, X, Y);
 				X += cps[cy].setWidth * letterSpacing;
 		  }
@@ -879,8 +877,8 @@ void ofTrueTypeFont::drawStringAsShapes(string c, float x, float y) {
 				 int cy = (int)'p' - NUM_CHARACTER_TO_START;
 				 X += cps[cy].setWidth;
 				 //glTranslated(cps[cy].width, 0, 0);
-		  } else {
-				drawCharAsShape(cy, X, Y);
+		  } else if(cy > -1){
+				drawCharAsShape(c[index], X, Y);
 				X += cps[cy].setWidth;
 				//glTranslated(cps[cy].setWidth, 0, 0);
 		  }

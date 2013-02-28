@@ -295,6 +295,10 @@ void ofMultMatrix (const float *m){
 	renderer->multMatrix(m);
 }
 
+void ofSetMatrixMode (ofMatrixMode matrixMode){
+	renderer->matrixMode(matrixMode);
+}
+
 // end transformation matrix related functions
 //----------------------------------------------------------
 
@@ -878,6 +882,11 @@ void ofVertexes( const vector <ofPoint> & polyPoints ){
 //---------------------------------------------------
 void ofCurveVertex(float x, float y){
 	shape.curveTo(x,y);
+}
+
+//---------------------------------------------------
+void ofCurveVertex(float x, float y, float z){
+	shape.curveTo(x,y,z);
 }
 
 //----------------------------------------------------------
