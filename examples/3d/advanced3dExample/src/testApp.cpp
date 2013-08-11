@@ -35,7 +35,7 @@ void testApp::setup(){
 	ofSetVerticalSync(true);
 	ofBackground(70, 70, 70);
 	ofEnableSmoothing();
-	glEnable(GL_DEPTH_TEST);
+	ofEnableDepthTest();
 
 
 	//--
@@ -133,12 +133,12 @@ void testApp::draw(){
 	//--
 	// Highlight background of selected camera
 
-	glDisable(GL_DEPTH_TEST);
+	ofDisableDepthTest();
 	ofPushStyle();
 	ofSetColor(100, 100, 100);
 	ofRect(viewGrid[iMainCamera]);
 	ofPopStyle();
-	glEnable(GL_DEPTH_TEST);
+	ofEnableDepthTest();
 
 	//
 	//--
@@ -305,7 +305,7 @@ void testApp::drawScene(int iCameraDraw){
 
 		ofNoFill();
 		// i.e. a box -1, -1, -1 to +1, +1, +1
-		ofBox(0, 0, 0, 2.0f);
+		ofDrawBox(0, 0, 0, 2.0f);
 		//
 		//--
 

@@ -44,22 +44,27 @@ bool testApp::removeWordIf(LyricWord &wrd) {
 //--------------------------------------------------------------
 void testApp::setup() {
     
+    ofTrueTypeFont::setGlobalDpi(96);
+
     // load the font
-    font.loadFont("Helvetica.dfont", 9);
+    font.loadFont("sans-serif", 11);
     sortTypeInfo = "no sort";
     words.clear();
     
-
     // load the txt document into a ofBuffer 
-    ofBuffer buffer = ofBufferFromFile("notoriousbig.txt");
+    ofBuffer buffer = ofBufferFromFile("freshprince.txt");
     string   content = buffer.getText();
     
     
     // take the content and split it up by spaces
+    // we need to also turn new lines into spaces so we can seperate words on new lines as well 
+    ofStringReplace(content, "\r", " ");
+    ofStringReplace(content, "\n", " ");
+
     vector <string> splitString = ofSplitString(content, " ", true, true);
     
     // copy over the words to our object
-    for (int i=0; i<splitString.size(); i++) {    
+    for (unsigned int i=0; i<splitString.size(); i++) {
         LyricWord wrd;
         wrd.occurrences = 1;
         wrd.word = ofToLower( splitString[i] );
@@ -68,7 +73,7 @@ void testApp::setup() {
     
     // clean up the words removing any 
     // characters that we do not want
-    for (int i=0; i<words.size(); i++) {
+    for (unsigned int i=0; i<words.size(); i++) {
         // run throught this ignore list and replace
         // that char with nothing
         char ignoreList[12] = {',', '.', '(', ')', '?', '!', '-', ':', '"', '\'', '\n', '\t'};
@@ -85,9 +90,9 @@ void testApp::setup() {
     
  
     // count the amount of times that we see a word
-    for (int i=0; i<words.size(); i++) {
+    for (unsigned int i=0; i<words.size(); i++) {
         int c = 1;
-        for (int j=0; j<words.size(); j++) {
+        for (unsigned int j=0; j<words.size(); j++) {
             if(words[i].word == words[j].word) c ++;
         }
         words[i].occurrences = c;
@@ -95,9 +100,9 @@ void testApp::setup() {
     
     // remove duplicates of the words
     vector<LyricWord>tempWord;
-    for (int i=0; i<words.size(); i++) {
+    for (unsigned int i=0; i<words.size(); i++) {
         bool bAdd = true;
-        for(int j=0; j<tempWord.size(); j++) {
+        for(unsigned int j=0; j<tempWord.size(); j++) {
             if(words[i].word == tempWord[j].word) bAdd = false;
         }
         
@@ -121,14 +126,15 @@ void testApp::update() {
 
 //--------------------------------------------------------------
 void testApp::draw() {
-    
+
+    ofSetColor(50);
     
     ofPushMatrix();
     ofTranslate(ofGetWidth()/2, ofGetHeight()/2);
     
     float radius = 350;
     
-    for(int i=0; i<words.size()/2; i++) {
+    for(unsigned int i=0; i<words.size()/2; i++) {
         float t = -HALF_PI + ofMap(i, 0, (words.size()/2), 0, TWO_PI);
         float x = cos( t ) * radius;
         float y = sin( t ) * radius;
