@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
@@ -133,7 +134,7 @@ public class OFAndroid {
 	Thread appInitThread;
 	
 	public OFAndroid(String appPackageName, OFActivity activity){
-		Log.i("OF","OFAndorid init...");
+		Log.i("OF","OFAndroid init...");
 		OFAndroid.ofActivity = activity;
 		ofActivity.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		//Log.i("OF","external files dir: "+ ofActivity.getApplicationContext().getExternalFilesDir(null));
@@ -219,7 +220,7 @@ public class OFAndroid {
 	    		String app_name="";
 				try {
 					int app_name_id = Class.forName(packageName+".R$string").getField("app_name").getInt(null);
-					app_name = ofActivity.getResources().getText(app_name_id).toString().toLowerCase();
+					app_name = ofActivity.getResources().getText(app_name_id).toString().toLowerCase(Locale.US);
 					Log.i("OF","app name: " + app_name);
 					
 					if(copydata){
@@ -237,7 +238,7 @@ public class OFAndroid {
 		    					String resName = ofActivity.getResources().getText(fileId).toString();
 		    					fileName = resName.substring(resName.lastIndexOf("/"));
 		    					Log.i("OF","checking " + fileName);
-		    					if(fileName.equals("/" + app_name+"resources.zip")){
+		    					if(fileName.equals("/" + app_name + "resources.zip")){
 		    						
 			    					from = ofActivity.getResources().openRawResource(fileId);
 									try{
@@ -356,7 +357,7 @@ public class OFAndroid {
 	public void pause(){
 		Log.i("OF","onPause");
 		disableTouchEvents();
-		if(mGLView!=null) mGLView.onPause();
+		
 		onPause();
 
 		synchronized (OFAndroidObject.ofObjects) {
@@ -364,7 +365,7 @@ public class OFAndroid {
 				object.onPause();
 			}
 		}
-
+		if(mGLView!=null) mGLView.onPause();
 		if(networkStateReceiver!=null){
 			try{
 				ofActivity.unregisterReceiver(networkStateReceiver);
@@ -382,7 +383,7 @@ public class OFAndroid {
 		resumed = true;
 		Log.i("OF","onResume");
 		enableTouchEvents();
-		
+		mGLView.onResume();
 		synchronized (OFAndroidObject.ofObjects) {
 			for(OFAndroidObject object : OFAndroidObject.ofObjects){
 				object.onResume();
@@ -390,7 +391,7 @@ public class OFAndroid {
 			
 		}
 		
-    	mGLView.onResume();
+    	
 		
         if(mGLView.isSetup()){
         	Log.i("OF","resume view and native");
