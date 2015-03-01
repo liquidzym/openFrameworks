@@ -52,10 +52,6 @@ void ofApp::draw(){
     model.drawFaces();
     ofPopMatrix();
 
-   if(ofGetGLProgrammableRenderer()){
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-    }
     glEnable(GL_NORMALIZE);
 
     ofPushMatrix();
@@ -70,19 +66,15 @@ void ofApp::draw(){
     
     ofMaterial & material = meshHelper.material;
     if(meshHelper.hasTexture()){
-        meshHelper.getTexturePtr()->bind();
+        meshHelper.getTextureRef().bind();
     }
     material.begin();
     mesh.drawWireframe();
     material.end();
     if(meshHelper.hasTexture()){
-        meshHelper.getTexturePtr()->unbind();
+        meshHelper.getTextureRef().unbind();
     }
     ofPopMatrix();
-
-    if(ofGetGLProgrammableRenderer()){
-    	glPopAttrib();
-    }
     
     ofDisableDepthTest();
     light.disable();

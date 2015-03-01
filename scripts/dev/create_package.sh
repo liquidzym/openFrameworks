@@ -5,9 +5,15 @@
 platform=$1
 version=$2
 
+if [ $# -eq 3 ]; then
+branch=$3
+else
+branch=stable
+fi
+
 REPO=https://github.com/openframeworks/openFrameworks
 REPO_ALIAS=upstreamhttps
-BRANCH=master
+BRANCH=$branch
 
 PG_REPO=https://github.com/ofZach/projectGeneratorSimple.git
 PG_REPO_ALIAS=originhttps
@@ -25,9 +31,12 @@ fi
 
 if [ "$version" == "" ]; then
     echo usage: 
-    echo ./create_package.sh platform version
+    echo ./create_package.sh platform version [branch]
     echo platform:
     echo win_cb, linux, linux64, vs, osx, android, ios, all
+    echo 
+    echo branch:
+    echo master, stable
     exit 1
 fi
 
@@ -38,37 +47,21 @@ libsnotinwindows="unicap gstappsink kiss portaudio"
 libsnotinandroid="glut unicap gstappsink quicktime videoInput fmodex glee rtAudio kiss portaudio cairo"
 libsnotinios="glut unicap gstappsink quicktime videoInput fmodex glee rtAudio kiss portaudio cairo"
 
-if [ ! -d openFrameworks/.git ]; then
-    git clone $REPO 
-    gitfinishedok=$?
-    if [ $gitfinishedok -ne 0 ]; then
-        echo "Error connecting to github"
-        exit
-    fi
+rm -rf openFrameworks
+git clone $REPO --depth=1 --branch=$BRANCH
+gitfinishedok=$?
+if [ $gitfinishedok -ne 0 ]; then
+    echo "Error connecting to github"
+    exit
 fi
 
 
 
 cd openFrameworks
 packageroot=$PWD
-if [ "$BRANCH" != "master" ]; then
-	git remote add $REPO_ALIAS $REPO
-	git fetch $REPO_ALIAS
-    git checkout --track -b $BRANCH ${REPO_ALIAS}/${BRANCH}
-fi
-git reset --hard
-git pull $REPO $BRANCH
-git submodule sync
-git submodule init
-git submodule update
 cd apps/projectGenerator/projectGeneratorSimple
-if [ "$PG_BRANCH" != "master" ]; then
-	git remote add $PG_REPO_ALIAS $PG_REPO
-	git fetch $PG_REPO_ALIAS
-    git checkout --track -b $PG_BRANCH ${PG_REPO_ALIAS}/${PG_BRANCH}
-fi
-git checkout $PG_BRANCH
-git pull $PG_REPO $PG_BRANCH
+git clone $PG_REPO --depth=1 --branch=$PG_BRANCH
+
 cd $packageroot
 
 
@@ -184,6 +177,10 @@ function createPackage {
         rm -Rf gl/pointsAsTextures
         rm -Rf gl/gpuParticleSystemExample
         rm -Rf gl/vboMeshDrawInstancedExample
+        rm -Rf gl/shaderExample
+        
+        rm -Rf utils/systemSpeakExample
+        rm -Rf utils/fileBufferLoadingCSVExample
         
         rm -Rf 3d/modelNoiseExample
     fi
@@ -202,6 +199,11 @@ function createPackage {
 	if [ "$pkg_platform" == "osx" ]; then
 	    rm -Rf gles
 	fi
+	
+	
+	
+	#delete tutorials by now
+	rm -Rf $pkg_ofroot/tutorials
     
 	
 	
@@ -252,7 +254,7 @@ function createPackage {
 	rm -rf projectGenerator
     if [ "$pkg_platform" = "win_cb" ]; then
 		rm projectGenerator_wincb.zip
-		wget http://visiblevisible.org/deliver/OF/projectGeneratorSimple_v02/projectGenerator_wincb.zip
+		wget http://www.openframeworks.cc/pgSimple/projectGenerator_wincb.zip
 		unzip projectGenerator_wincb.zip
 		rm projectGenerator_wincb.zip
 		rm -Rf __MACOSX
@@ -266,14 +268,14 @@ function createPackage {
 	fi
     if [ "$pkg_platform" = "osx" ]; then
 		rm projectGenerator_osx.zip
-		wget http://visiblevisible.org/deliver/OF/projectGeneratorSimple_v02/projectGenerator_osx.zip
+		wget http://www.openframeworks.cc/pgSimple/projectGenerator_osx.zip
 		unzip projectGenerator_osx.zip
 		rm projectGenerator_osx.zip
 		rm -Rf __MACOSX
 	fi
     if [ "$pkg_platform" = "ios" ]; then
 		rm projectGenerator_ios.zip
-		wget http://visiblevisible.org/deliver/OF/projectGeneratorSimple_v02/projectGenerator_ios.zip
+		wget http://www.openframeworks.cc/pgSimple/projectGenerator_ios.zip
 		unzip projectGenerator_ios.zip
 		rm projectGenerator_ios.zip
 		rm -Rf __MACOSX
@@ -320,9 +322,6 @@ function createPackage {
         cd $pkg_ofroot/addons
     done
     
-	#delete ofxSynth addon, still not stable
-	rm -Rf ofxSynth
-    
 	#delete ofxAndroid in non android
 	if [ "$pkg_platform" != "android" ]; then
 		rm -Rf ofxAndroid
@@ -338,12 +337,23 @@ function createPackage {
 		rm -Rf ofxMultiTouch
 		rm -Rf ofxAccelerometer
 	fi
+	
+	if [ "$pkg_platform" == "ios" ] || [ "$pkg_platform" == "android" ]; then
+	    rm -Rf ofxVectorGraphics
+   	    rm -Rf ofxKinect
+	fi
 
 	#delete eclipse projects
 	if [ "$pkg_platform" != "android" ] && [ "$pkg_platform" != "linux" ] && [ "$pkg_platform" != "linux64" ] && [ "$pkg_platform" != "linuxarmv6l" ] && [ "$pkg_platform" != "linuxarmv7l" ]; then
 		cd ${pkg_ofroot}
 		deleteEclipse
 		rm -R libs/openFrameworks/.settings
+	fi
+	
+	#android, move paths.default.make to paths.make
+	if [ "$pkg_platform" == "android" ]; then
+	    cd ${pkg_ofroot}
+	    mv libs/openFrameworksCompiled/project/android/paths.default.make libs/openFrameworksCompiled/project/android/paths.make
 	fi
 
     #delete other platforms OF project files
@@ -355,7 +365,7 @@ function createPackage {
     #remove osx in ios from openFrameworksCompiled 
     #(can't delete by default since it needs to keep things in libs for the simulator)
     if [ "$pkg_platform" = "ios" ]; then
-	    rm -Rf ${pkg_ofroot}libs/openFrameworksCompiled/lib/osx
+	    rm -Rf ${pkg_ofroot}/libs/openFrameworksCompiled/lib/osx
     	rm -Rf ${pkg_ofroot}/libs/openFrameworksCompiled/project/osx
     fi
 
@@ -404,7 +414,6 @@ function createPackage {
 	if [ "$pkg_platform" == "ios" ]; then
 		rm -Rf osx
 	fi
-    rm create_package.sh
 
     #delete .svn dirs
     cd $pkg_ofroot
@@ -426,11 +435,11 @@ function createPackage {
 	
 	
 	#download and copy OF compiled
-	cd $pkg_ofroot/libs/openFrameworksCompiled/lib/${pkg_platform}
-    if [ "$pkg_platform" = "win_cb" ]; then
-		wget http://openframeworks.cc/git_pkgs/OF_compiled/${pkg_platform}/openFrameworks.lib
-		wget http://openframeworks.cc/git_pkgs/OF_compiled/${pkg_platform}/openFrameworksDebug.lib
-	fi
+	#cd $pkg_ofroot/libs/openFrameworksCompiled/lib/${pkg_platform}
+    	#if [ "$pkg_platform" = "win_cb" ]; then
+	#	wget http://openframeworks.cc/git_pkgs/OF_compiled/${pkg_platform}/openFrameworks.lib
+	#	wget http://openframeworks.cc/git_pkgs/OF_compiled/${pkg_platform}/openFrameworksDebug.lib
+	#fi
 
 
     #if snow leopard change 10.4u to 10.5
@@ -480,7 +489,7 @@ function createPackage {
     if [ "$pkg_platform" = "linux" ] || [ "$pkg_platform" = "linux64" ] || [ "$pkg_platform" = "android" ] || [ "$pkg_platform" = "linuxarmv6l" ] || [ "$pkg_platform" = "linuxarmv7l" ]; then
         mkdir of_v${pkg_version}_${pkg_platform}_release
         mv openFrameworks/* of_v${pkg_version}_${pkg_platform}_release
-        tar czf of_v${pkg_version}_${pkg_platform}_release.tar.gz of_v${pkg_version}_${pkg_platform}_release
+        COPYFILE_DISABLE=true tar czf of_v${pkg_version}_${pkg_platform}_release.tar.gz of_v${pkg_version}_${pkg_platform}_release
         rm -Rf of_v${pkg_version}_${pkg_platform}_release
     else
         mkdir of_v${pkg_version}_${pkg_platform}_release
@@ -506,7 +515,7 @@ if [ "$platform" = "all" ]; then
     echo dir: $PWD
     mkdir of_v${version}_all
     mv addons apps export libs other scripts $packageroot/of_v${version}_all
-    tar czf of_v$version_all_FAT.tar.gz of_v${version}_all
+    COPYFILE_DISABLE=true tar czf of_v$version_all_FAT.tar.gz of_v${version}_all
     rm -Rf of_v${version}_all
     mv * $packageroot/..
     #rm -Rf $packageroot
@@ -518,8 +527,6 @@ else
     
 fi
 
-cd $packageroot
-git reset --hard
 
 cd $packageroot/.. 
-    
+rm -rf openFrameworks   

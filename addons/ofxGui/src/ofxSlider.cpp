@@ -5,6 +5,7 @@ template<typename Type>
 ofxSlider<Type>::ofxSlider(){
 	bUpdateOnReleaseOnly = false;
 	bGuiActive = false;
+	mouseInside = false;
 }
 
 template<typename Type>
@@ -28,7 +29,7 @@ ofxSlider<Type>* ofxSlider<Type>::setup(ofParameter<Type> _val, float width, flo
 	bGuiActive = false;
 
 	value.addListener(this,&ofxSlider::valueChanged);
-	ofRegisterMouseEvents(this,OF_EVENT_ORDER_BEFORE_APP);
+	registerMouseEvents();
 	generateDraw();
 	return this;
 }
@@ -40,12 +41,29 @@ ofxSlider<Type>* ofxSlider<Type>::setup(string sliderName, Type _val, Type _min,
 }
 
 template<typename Type>
+void ofxSlider<Type>::setMin(Type min){
+    value.setMin(min);
+}
+
+template<typename Type>
+Type ofxSlider<Type>::getMin(){
+    return value.getMin();
+}
+
+template<typename Type>
+void ofxSlider<Type>::setMax(Type max){
+    value.setMax(max);
+}
+
+template<typename Type>
+Type ofxSlider<Type>::getMax(){
+    return value.getMax();
+}
+
+template<typename Type>
 bool ofxSlider<Type>::mouseMoved(ofMouseEventArgs & args){
-	if(isGuiDrawing() && b.inside(ofPoint(args.x,args.y))){
-		return true;
-	}else{
-		return false;
-	}
+	mouseInside = isGuiDrawing() && b.inside(ofPoint(args.x,args.y));
+	return mouseInside;
 }
 
 template<typename Type>
@@ -78,6 +96,22 @@ bool ofxSlider<Type>::mouseReleased(ofMouseEventArgs & args){
 
 	bGuiActive = false;
 	if(attended){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+template<typename Type>
+bool ofxSlider<Type>::mouseScrolled(ofMouseEventArgs & args){
+	if(mouseInside){
+		if(args.y>0 || args.y<0){
+			double range = value.getMax() - value.getMin();
+			range /= b.width*4;
+			Type newValue = value + ofMap(args.y,-1,1,-range, range);
+			newValue = ofClamp(newValue,value.getMin(),value.getMax());
+			value = newValue;
+		}
 		return true;
 	}else{
 		return false;

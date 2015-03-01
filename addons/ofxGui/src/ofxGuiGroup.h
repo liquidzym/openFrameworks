@@ -39,6 +39,7 @@ public:
 	virtual bool mousePressed(ofMouseEventArgs & args);
 	virtual bool mouseDragged(ofMouseEventArgs & args);
 	virtual bool mouseReleased(ofMouseEventArgs & args);
+	virtual bool mouseScrolled(ofMouseEventArgs & args);
 	
 	
 	vector<string> getControlNames();
@@ -59,8 +60,6 @@ public:
 	virtual void setPosition(float x, float y);
 protected:
 	virtual void render();
-    void registerMouseEvents();
-    void unregisterMouseEvents();
     virtual bool setValue(float mx, float my, bool bCheck);
     void sizeChangedCB();
     

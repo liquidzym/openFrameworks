@@ -81,7 +81,7 @@ ofxGuiGroup * ofxGuiGroup::setup(const ofParameterGroup & _parameters, string _f
 	}
 
 	parameters = _parameters;
-	ofRegisterMouseEvents(this,OF_EVENT_ORDER_BEFORE_APP);
+    registerMouseEvents();
 
 	generateDraw();
     
@@ -97,7 +97,7 @@ void ofxGuiGroup::add(ofxBaseGui * element){
 
 	//if(b.width<element->getWidth()) b.width = element->getWidth();
     
-	ofUnregisterMouseEvents(element);
+    element->unregisterMouseEvents();
     
 	ofxGuiGroup * subgroup = dynamic_cast<ofxGuiGroup*>(element);
 	if(subgroup!=NULL){
@@ -230,6 +230,18 @@ bool ofxGuiGroup::mouseReleased(ofMouseEventArgs & args){
 	}
 }
 
+bool ofxGuiGroup::mouseScrolled(ofMouseEventArgs & args){
+	ofMouseEventArgs a = args;
+	for(int i = 0; i < (int)collection.size(); i++){
+		if(collection[i]->mouseScrolled(a)) return true;
+	}
+	if(isGuiDrawing() && b.inside(ofPoint(args.x,args.y))){
+		return true;
+	}else{
+		return false;
+	}
+}
+
 void ofxGuiGroup::generateDraw(){
 	border.clear();
 	border.setFillColor(ofColor(thisBorderColor,180));
@@ -312,14 +324,6 @@ ofxBaseGui * ofxGuiGroup::getControl(string name){
 		}
 	}
 	return NULL;
-}
-
-void ofxGuiGroup::registerMouseEvents(){
-	ofRegisterMouseEvents(this,OF_EVENT_ORDER_BEFORE_APP);
-}
-
-void ofxGuiGroup::unregisterMouseEvents(){
-	ofUnregisterMouseEvents(this,OF_EVENT_ORDER_BEFORE_APP);
 }
 
 bool ofxGuiGroup::setValue(float mx, float my, bool bCheck){
