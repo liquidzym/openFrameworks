@@ -414,7 +414,9 @@ bool ofFile::openStream(Mode _mode, bool _binary){
 		case WriteOnly:
 		case ReadWrite:
 		case Append:
-			ofFilePath::createEnclosingDirectory(path());
+			if(!ofDirectory(ofFilePath::getEnclosingDirectory(path())).exists()){
+				ofFilePath::createEnclosingDirectory(path());
+			}
 			break;
 		case Reference:
 		case ReadOnly:
@@ -481,7 +483,7 @@ void ofFile::close(){
 bool ofFile::create(){
 	bool success = false;
 
-	if(myFile.string().empty()){
+	if(!myFile.string().empty()){
 		auto mode = this->mode;
 		success = open(path(),ofFile::WriteOnly);
 		open(path(),mode);
@@ -531,7 +533,12 @@ string ofFile::path() const {
 
 //------------------------------------------------------------------------------------------------------------
 string ofFile::getExtension() const {
-	return myFile.extension().string();
+	auto dotext = myFile.extension().string();
+	if(!dotext.empty() && dotext.front()=='.'){
+		return std::string(dotext.begin()+1,dotext.end());
+	}else{
+		return dotext;
+	}
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -541,7 +548,7 @@ string ofFile::getFileName() const {
 
 //------------------------------------------------------------------------------------------------------------
 string ofFile::getBaseName() const {
-	return ofFilePath::removeExt(myFile.filename().string());
+	return std::filesystem::basename(myFile);
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -604,7 +611,7 @@ bool ofFile::canWrite() const {
 bool ofFile::canExecute() const {
 	auto perm = std::filesystem::status(myFile).permissions();
 #ifdef TARGET_WIN32
-	return myFile.extension() == "exe";
+	return getExtension() == "exe";
 #else
 	struct stat info;
 	stat(path().c_str(), &info);  // Error check omitted
@@ -652,19 +659,19 @@ bool ofFile::isHidden() const {
 
 //------------------------------------------------------------------------------------------------------------
 void ofFile::setWriteable(bool flag){
-	try{
-		std::filesystem::permissions(myFile,std::filesystem::perms::owner_write | std::filesystem::perms::add_perms);
-	}catch(std::exception & e){
-		ofLogError() << "Couldn't set write permission on " << myFile << ": " << e.what();
-	}
+	setReadOnly(!flag);
 }
 
 //------------------------------------------------------------------------------------------------------------
 void ofFile::setReadOnly(bool flag){
 	try{
-		std::filesystem::permissions(myFile,std::filesystem::perms::owner_read | std::filesystem::perms::remove_perms);
-		std::filesystem::permissions(myFile,std::filesystem::perms::group_read | std::filesystem::perms::remove_perms);
-		std::filesystem::permissions(myFile,std::filesystem::perms::others_read | std::filesystem::perms::remove_perms);
+		if(flag){
+			std::filesystem::permissions(myFile,std::filesystem::perms::owner_write | std::filesystem::perms::remove_perms);
+			std::filesystem::permissions(myFile,std::filesystem::perms::owner_write | std::filesystem::perms::remove_perms);
+			std::filesystem::permissions(myFile,std::filesystem::perms::owner_write | std::filesystem::perms::remove_perms);
+		}else{
+			std::filesystem::permissions(myFile,std::filesystem::perms::owner_write | std::filesystem::perms::add_perms);
+		}
 	}catch(std::exception & e){
 		ofLogError() << "Couldn't set write permission on " << myFile << ": " << e.what();
 	}
@@ -681,6 +688,9 @@ void ofFile::setExecutable(bool flag){
 
 //------------------------------------------------------------------------------------------------------------
 bool ofFile::copyTo(string path, bool bRelativeToData, bool overwrite){
+	if(isDirectory()){
+		return ofDirectory(myFile).copyTo(path,bRelativeToData,overwrite);
+	}
 	if(path.empty()){
 		ofLogError("ofFile") << "copyTo(): destination path is empty";
 		return false;
@@ -703,10 +713,11 @@ bool ofFile::copyTo(string path, bool bRelativeToData, bool overwrite){
 	}
 
 	try{
-		ofFilePath::createEnclosingDirectory(path, bRelativeToData);
-		std::filesystem::copy_file(myFile,path);
-	}
-	catch(std::exception & except){
+		if(!ofDirectory(ofFilePath::getEnclosingDirectory(path,bRelativeToData)).exists()){
+			ofFilePath::createEnclosingDirectory(path, bRelativeToData);
+		}
+		std::filesystem::copy(myFile,path);
+	}catch(std::exception & except){
 		ofLogError("ofFile") <<  "copyTo(): unable to copy \"" << path << "\":" << except.what();
 		return false;
 	}
@@ -738,7 +749,9 @@ bool ofFile::moveTo(string path, bool bRelativeToData, bool overwrite){
 	}
 
 	try{
-		ofFilePath::createEnclosingDirectory(path, bRelativeToData);
+		if(!ofDirectory(ofFilePath::getEnclosingDirectory(path,bRelativeToData)).exists()){
+			ofFilePath::createEnclosingDirectory(path, bRelativeToData);
+		}
 		std::filesystem::rename(myFile,path);
 		myFile = path;
 	}
@@ -762,7 +775,7 @@ bool ofFile::remove(bool recursive){
 		return false;
 	}
 	if(!exists()){
-		ofLogError("ofFile") << "copyTo(): file does not exist";
+		ofLogError("ofFile") << "remove(): file does not exist";
 		return false;
 	}
 
@@ -772,8 +785,7 @@ bool ofFile::remove(bool recursive){
 		}else{
 			std::filesystem::remove(myFile);
 		}
-	}
-	catch(std::exception & except){
+	}catch(std::exception & except){
 		ofLogError("ofFile") << "remove(): unable to remove \"" << myFile << "\": " << except.what();
 		return false;
 	}
@@ -783,7 +795,12 @@ bool ofFile::remove(bool recursive){
 
 //------------------------------------------------------------------------------------------------------------
 uint64_t ofFile::getSize() const {
-	return std::filesystem::file_size(myFile);
+	try{
+		return std::filesystem::file_size(myFile);
+	}catch(std::exception & except){
+		ofLogError("ofFile") << "getSize(): unable to get size of \"" << myFile << "\": " << except.what();
+		return 0;
+	}
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -836,8 +853,7 @@ bool ofFile::copyFromTo(string pathSrc, string pathDst, bool bRelativeToData,  b
 	if(ofFile::doesFileExist(pathDst, bRelativeToData)){
 		if(overwrite){
 			ofFile::removeFile(pathDst, bRelativeToData);
-		}
-		else{
+		}else{
 			ofLogWarning("ofFile") << "copyFromTo(): destination file/directory \"" << pathSrc << "\"exists,"
 			<< " set bool overwrite to true if you want to overwrite it";
 		}
@@ -925,17 +941,16 @@ ofDirectory::ofDirectory(){
 }
 
 //------------------------------------------------------------------------------------------------------------
-ofDirectory::ofDirectory(string path){
+ofDirectory::ofDirectory(const std::filesystem::path & path){
 	showHidden = false;
 	open(path);
 }
 
 //------------------------------------------------------------------------------------------------------------
-void ofDirectory::open(string path){
-	path = ofFilePath::getPathForDirectory(path);
-	originalDirectory = path;
+void ofDirectory::open(const std::filesystem::path & path){
+	originalDirectory = ofFilePath::getPathForDirectory(path.string());
 	files.clear();
-	myDir = std::filesystem::path(ofToDataPath(path));
+	myDir = std::filesystem::path(ofToDataPath(originalDirectory));
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -1026,32 +1041,45 @@ bool ofDirectory::isDirectory() const {
 //------------------------------------------------------------------------------------------------------------
 bool ofDirectory::copyTo(string path, bool bRelativeToData, bool overwrite){
 	if(myDir.string().empty()){
-		ofLogError("ofDirectory") << "copyTo(): destination path is empty";
+		ofLogError("ofDirectory") << "copyTo(): source path is empty";
 		return false;
 	}
 	if(!std::filesystem::exists(myDir)){
 		ofLogError("ofDirectory") << "copyTo(): source directory does not exist";
 		return false;
 	}
+	if(!std::filesystem::is_directory(myDir)){
+		ofLogError("ofDirectory") << "copyTo(): source path is not a directory";
+		return false;
+	}
 
 	if(bRelativeToData){
 		path = ofToDataPath(path, bRelativeToData);
 	}
+
 	if(ofDirectory::doesDirectoryExist(path, bRelativeToData)){
 		if(overwrite){
 			ofDirectory::removeDirectory(path, true, bRelativeToData);
-		}
-		else{
+		}else{
 			ofLogWarning("ofDirectory") << "copyTo(): dest \"" << path << "\" already exists, set bool overwrite to true to overwrite it";
+			return false;
 		}
 	}
 
-	try{
-		std::filesystem::copy(myDir,path);
-	}
-	catch(std::exception & except){
-		ofLogError("ofDirectory") << "copyTo(): unable to copy \"" << path << "\": " << except.what();
-		return false;
+	ofDirectory(path).create(true);
+	// Iterate through the source directory
+	for(std::filesystem::directory_iterator file(myDir); file != std::filesystem::directory_iterator(); ++file){
+		auto currentPath = std::filesystem::absolute(file->path());
+		auto dst = std::filesystem::path(path) / currentPath.filename();
+		if(std::filesystem::is_directory(currentPath)){
+			ofDirectory current(currentPath);
+			// Found directory: Recursion
+			if(!current.copyTo(dst.string(),false)){
+				return false;
+			}
+		}else{
+			ofFile(file->path()).copyTo(dst.string(),false);
+		}
 	}
 
 	return true;
@@ -1059,37 +1087,11 @@ bool ofDirectory::copyTo(string path, bool bRelativeToData, bool overwrite){
 
 //------------------------------------------------------------------------------------------------------------
 bool ofDirectory::moveTo(string path, bool bRelativeToData, bool overwrite){
-	if(myDir.string().empty()){
-		ofLogError("ofDirectory") << "moveTo(): destination path is empty";
+	if(copyTo(path,bRelativeToData,overwrite)){
+		return remove(true);
+	}else{
 		return false;
 	}
-	if(!std::filesystem::exists(myDir)){
-		ofLogError("ofDirectory") << "moveTo(): source directory does not exist";
-		return false;
-	}
-
-	if(bRelativeToData){
-		path = ofToDataPath(path, bRelativeToData);
-	}
-	if(ofDirectory::doesDirectoryExist(path, bRelativeToData)){
-		if(overwrite){
-			ofDirectory::removeDirectory(path, true, bRelativeToData);
-		}
-		else{
-			ofLogWarning("ofDirectory") << "moveTo(): destination folder already exists, set bool overwrite to true to overwrite it";
-		}
-	}
-
-	try{
-		std::filesystem::copy(myDir,path);
-		std::filesystem::remove(myDir);
-	}
-	catch(std::exception & except){
-		ofLogError("ofDirectory") << "moveTo(): unable to move \"" << path << "\": " << except.what();
-		return false;
-	}
-
-	return true;
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -1104,9 +1106,12 @@ bool ofDirectory::remove(bool recursive){
 	}
 
 	try{
-		std::filesystem::remove(myDir);
-	}
-	catch(std::exception & except){
+		if(recursive){
+			std::filesystem::remove_all(myDir);
+		}else{
+			std::filesystem::remove(myDir);
+		}
+	}catch(std::exception & except){
 		ofLogError("ofDirectory") << "remove(): unable to remove file/directory: " << except.what();
 		return false;
 	}
@@ -1201,7 +1206,10 @@ ofFile ofDirectory::operator[](unsigned int position){
 }
 
 //------------------------------------------------------------------------------------------------------------
-vector<ofFile>ofDirectory::getFiles(){
+const vector<ofFile> & ofDirectory::getFiles() const{
+	if(files.empty()){
+		const_cast<ofDirectory*>(this)->listDir();
+	}
 	return files;
 }
 
@@ -1331,18 +1339,8 @@ bool ofDirectory::operator>=(const ofDirectory & dir){
 }
 
 //------------------------------------------------------------------------------------------------------------
-vector<ofFile>::iterator ofDirectory::begin(){
-	return files.begin();
-}
-
-//------------------------------------------------------------------------------------------------------------
-vector<ofFile>::iterator ofDirectory::end(){
-	return files.end();
-}
-
-//------------------------------------------------------------------------------------------------------------
 vector<ofFile>::const_iterator ofDirectory::begin() const{
-	return files.begin();
+	return getFiles().begin();
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -1351,18 +1349,8 @@ vector<ofFile>::const_iterator ofDirectory::end() const{
 }
 
 //------------------------------------------------------------------------------------------------------------
-vector<ofFile>::reverse_iterator ofDirectory::rbegin(){
-	return files.rbegin();
-}
-
-//------------------------------------------------------------------------------------------------------------
-vector<ofFile>::reverse_iterator ofDirectory::rend(){
-	return files.rend();
-}
-
-//------------------------------------------------------------------------------------------------------------
 vector<ofFile>::const_reverse_iterator ofDirectory::rbegin() const{
-	return files.rbegin();
+	return getFiles().rbegin();
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -1403,28 +1391,12 @@ string ofFilePath::addTrailingSlash(string path){
 
 //------------------------------------------------------------------------------------------------------------
 string ofFilePath::getFileExt(string filename){
-	std::string::size_type idx;
-	idx = filename.rfind('.');
-
-	if(idx != std::string::npos){
-		return filename.substr(idx + 1);
-	}
-	else{
-		return "";
-	}
+	return ofFile(filename,ofFile::Reference).getExtension();
 }
 
 //------------------------------------------------------------------------------------------------------------
 string ofFilePath::removeExt(string filename){
-	std::string::size_type idx;
-	idx = filename.rfind('.');
-
-	if(idx != std::string::npos){
-		return filename.substr(0, idx);
-	}
-	else{
-		return filename;
-	}
+	return ofFile(filename,ofFile::Reference).getBaseName();
 }
 
 
@@ -1461,7 +1433,7 @@ string ofFilePath::getFileName(string filePath, bool bRelativeToData){
 
 //------------------------------------------------------------------------------------------------------------
 string ofFilePath::getBaseName(string filePath){
-	return removeExt(getFileName(filePath));
+	return ofFile(filePath).getBaseName();
 }
 
 //------------------------------------------------------------------------------------------------------------
