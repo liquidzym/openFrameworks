@@ -5,6 +5,7 @@
 #include <mutex>
 #include <thread>
 #include <memory>
+#include <iterator>
 
 class ofEventAttendedException: public std::exception{};
 
@@ -23,7 +24,6 @@ public:
     	enabled = false;
     }
 
-protected:
     class Function{
     public:
     	int priority;
@@ -46,6 +46,7 @@ protected:
     	}
     };
 
+protected:
     template<typename TFunction>
     void add(TFunction * f){
         std::unique_lock<std::mutex> lck(mtx);
@@ -151,9 +152,15 @@ public:
 
     void notify(const void* sender, T & param){
         if(enabled){
-            std::unique_lock<std::mutex> lck(mtx);
-			for(auto & f: functions){
-				if(static_cast<BaseFunction*>(f.get())->call(sender,param)){
+        	std::vector<ofBaseEvent::Function*> functions_copy;
+        	{
+        		std::unique_lock<std::mutex> lck(mtx);
+        		std::transform(functions.begin(), functions.end(),
+        				std::back_inserter(functions_copy),
+						[&](unique_ptr<ofBaseEvent::Function>&f){return f.get();});
+        	}
+			for(auto & f: functions_copy){
+				if(static_cast<BaseFunction*>(f)->call(sender,param)){
 					throw ofEventAttendedException();
 				}
 			}
@@ -241,9 +248,15 @@ public:
 
     void notify(const void* sender){
         if(enabled){
-            std::unique_lock<std::mutex> lck(mtx);
-			for(auto & f: functions){
-				if(static_cast<BaseFunction*>(f.get())->call(sender)){
+        	std::vector<ofBaseEvent::Function*> functions_copy;
+        	{
+        		std::unique_lock<std::mutex> lck(mtx);
+        		std::transform(functions.begin(), functions.end(),
+        				std::back_inserter(functions_copy),
+						[&](unique_ptr<ofBaseEvent::Function> & f){return f.get();});
+        	}
+			for(auto & f: functions_copy){
+				if(static_cast<BaseFunction*>(f)->call(sender)){
 					throw ofEventAttendedException();
 				}
 			}
