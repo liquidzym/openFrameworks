@@ -427,7 +427,7 @@ function build() {
 			echo "Building openssl-${VER} for ${PLATFORM} ${SDKVERSION} ${IOS_ARCH} : iOS Minimum=$MIN_IOS_VERSION"
 
 			set +e
-			if [[ "$VERSION" =~ 1.0.0. ]]; then
+			if [ "$VERSION" =~ 1.0.0. ]; then
 				echo "Building for OpenSSL Version before 1.0.0"
 	    		./Configure BSD-generic32 -no-asm --openssldir="$CURRENTPATH/build/$TYPE/$IOS_ARCH" > "${LOG}" 2>&1
 			elif [ "${IOS_ARCH}" == "i386" ]; then

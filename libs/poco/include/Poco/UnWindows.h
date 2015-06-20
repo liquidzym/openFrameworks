@@ -61,7 +61,7 @@
 #if !defined(_WIN32_WCE)
 #if defined(_WIN32_WINNT)
 	#if (_WIN32_WINNT < 0x0501)
-//		#error Unsupported Windows version.
+		#error Unsupported Windows version.
 	#endif
 #elif defined(NTDDI_VERSION)
 	#if (NTDDI_VERSION < 0x05010100)
