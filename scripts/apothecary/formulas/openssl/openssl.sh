@@ -427,7 +427,7 @@ function build() {
 			echo "Building openssl-${VER} for ${PLATFORM} ${SDKVERSION} ${IOS_ARCH} : iOS Minimum=$MIN_IOS_VERSION"
 
 			set +e
-			if [ "$VERSION" =~ 1.0.0. ]; then
+			if [ [ "$VERSION" =~ 1.0.0. ] ]; then
 				echo "Building for OpenSSL Version before 1.0.0"
 	    		./Configure BSD-generic32 -no-asm --openssldir="$CURRENTPATH/build/$TYPE/$IOS_ARCH" > "${LOG}" 2>&1
 			elif [ "${IOS_ARCH}" == "i386" ]; then
@@ -601,8 +601,14 @@ function copy() {
 	
 	mkdir -pv $1/include/openssl/
 	
-	# storing a copy of the include in lib/include/
-	# set via: cp -R "build/$TYPE/x86_64/include/" "lib/include/"
+	# opensslconf.h is different in every platform, we need to copy
+	# it as opensslconf_$(TYPE).h and use a modified version of 
+	# opensslconf.h that detects the platform and includes the 
+	# correct one. Then every platform checkouts the rest of the config
+	# files that were deleted here
+	mv include/openssl/opensslconf.h include/openssl/opensslconf_${TYPE}.h
+    cp -RHv include/openssl/* $1/include/openssl/
+    cp -v $FORMULA_DIR/opensslconf.h $1/include/openssl/opensslconf.h
 
 	# suppress file not found errors
 	#same here doesn't seem to be a solid reason to delete the files
@@ -610,8 +616,6 @@ function copy() {
 
 	# libs
 	if [ "$TYPE" == "osx" ] ; then
-		mv lib/include/openssl/opensslconf.h lib/include/openssl/opensslconf_osx.h
-	    cp -Rv lib/include/* $1/include/
 		mkdir -p $1/lib/$TYPE
 		cp -v lib/$TYPE/*.a $1/lib/$TYPE
 		git checkout $1/include/openssl/opensslconf_ios.h
@@ -619,8 +623,6 @@ function copy() {
     	git checkout $1/include/openssl/opensslconf_vs.h
     	git checkout $1/include/openssl/opensslconf_win32.h
 	elif [ "$TYPE" == "ios" ] ; then
-	    mv lib/include/openssl/opensslconf.h lib/include/openssl/opensslconf_ios.h
-	    cp -Rv lib/include/* $1/include/
 	 	mkdir -p $1/lib/$TYPE
 	 	cp -v lib/$TYPE/*.a $1/lib/$TYPE
 		git checkout $1/include/openssl/opensslconf_osx.h
@@ -629,7 +631,6 @@ function copy() {
     	git checkout $1/include/openssl/opensslconf_win32.h
 	elif [ "$TYPE" == "vs" ] ; then	 
 		if [ $ARCH == 32 ] ; then
-			cp -Rv ms/Win32/include/openssl $1/include/
 			rm -rf $1/lib/$TYPE/Win32
 			mkdir -p $1/lib/$TYPE/Win32
 			cp -v ms/Win32/lib/*.lib $1/lib/$TYPE/Win32/
@@ -638,7 +639,6 @@ function copy() {
 				mv -v $f $1/lib/$TYPE/Win32/${base}md.lib
 			done
 		elif [ $ARCH == 64 ] ; then
-			cp -Rv ms/X64/include/openssl $1/include/
 			rm -rf $1/lib/$TYPE/x64
 			mkdir -p $1/lib/$TYPE/x64
 			cp -v ms/x64/lib/*.lib $1/lib/$TYPE/x64/
@@ -657,8 +657,6 @@ function copy() {
 	# 	cp -v lib/MinGW/i686/*.a $1/lib/$TYPE
 	
 	elif [ "$TYPE" == "android" ] ; then
-	    mv include/openssl/opensslconf.h include/openssl/opensslconf_android.h
-	    cp -Rv include/openssl $1/include/
 	    if [ -d $1/lib/$TYPE/ ]; then
 	        rm -r $1/lib/$TYPE/
 	    fi
@@ -690,8 +688,6 @@ function copy() {
     cp -v LICENSE $1/license/
 	
 	
-    # opensslconf.h might be different per platform. Copy custom file
-    cp -v $FORMULA_DIR/opensslconf.h $1/include/openssl/opensslconf.h
 }
 
 # executed inside the lib src dir
