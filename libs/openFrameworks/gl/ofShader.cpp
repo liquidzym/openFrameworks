@@ -11,35 +11,7 @@
 #include "ofVec4f.h"
 #include "ofParameterGroup.h"
 #include "ofParameter.h"
-
-#if HAS_CPP11
-	#include <regex>
-#else
-	#include "Poco/RegularExpression.h"
-	namespace std{
-		typedef Poco::RegularExpression regex;
-		class regmatch{
-			string str;
-		public:
-			regmatch(const string & str, Poco::RegularExpression::Match pocomatch)
-			:str(str.substr(pocomatch.offset, pocomatch.length)){}
-
-			operator string() const{
-				return str;
-			}
-		};
-		typedef vector<regmatch> smatch;
-		bool regex_match(const string & str, smatch & matches, const regex & re){
-			Poco::RegularExpression::MatchVec pocomatches;
-			auto ret = re.match( str, 0, pocomatches );
-			matches.clear();
-			for(const auto & m: pocomatches){
-				matches.push_back(regmatch(str,m));
-			}
-			return ret;
-		}
-	}
-#endif
+#include <regex>
 
 static const string COLOR_ATTRIBUTE="color";
 static const string POSITION_ATTRIBUTE="position";
@@ -381,7 +353,7 @@ void ofShader::checkShaderInfoLog(GLuint shader, GLenum type, ofLogLevel logLeve
 			std::regex intel("^[0-9]+:([0-9]+)\\([0-9]+\\):.*$");
 			std::smatch matches;
 			string infoString = (infoBuffer != NULL) ? ofTrim(infoBuffer): "";
-			if (std::regex_match(infoString, matches, intel) || std::regex_match(infoString, matches, nvidia_ati)){
+			if (std::regex_search(infoString, matches, intel) || std::regex_search(infoString, matches, nvidia_ati)){
 				ofBuffer buf = shaderSource[type];
 				ofBuffer::Line line = buf.getLines().begin();
 				int  offendingLineNumber = ofToInt(matches[1]);
