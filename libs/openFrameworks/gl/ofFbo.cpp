@@ -71,7 +71,7 @@
 
 
 //-------------------------------------------------------------------------------------
-ofFbo::Settings::Settings() {
+ofFbo::Settings::Settings(std::shared_ptr<ofBaseGLRenderer> renderer) {
 	width					= 0;
 	height					= 0;
 	numColorbuffers			= 1;
@@ -90,6 +90,11 @@ ofFbo::Settings::Settings() {
 	minFilter				= GL_LINEAR;
 	maxFilter				= GL_LINEAR;
 	numSamples				= 0;
+	if(renderer){
+		this->renderer = renderer;
+	}else{
+		this->renderer = ofGetGLRenderer();
+	}
 }
 
 bool ofFbo::Settings::operator!=(const Settings & other){
@@ -151,6 +156,10 @@ bool ofFbo::Settings::operator!=(const Settings & other){
 	}
 	if(numSamples != other.numSamples){
 		ofLogError() << "settings numSamples differs from source";
+		return true;
+	}
+	if(renderer.lock() != other.renderer.lock()){
+		ofLogError() << "settings renderers are different";
 		return true;
 	}
 	return false;
@@ -226,8 +235,7 @@ depthBuffer(0),
 stencilBuffer(0),
 dirty(false),
 defaultTextureIndex(0),
-bIsAllocated(false),
-previousFramebufferBinding(GL_NONE)
+bIsAllocated(false)
 {
 #ifdef TARGET_OPENGLES
 	if(!bglFunctionsInitialized){
@@ -284,7 +292,6 @@ ofFbo::ofFbo(const ofFbo & mom){
 	textures = mom.textures;
 	dirty = mom.dirty;
 	defaultTextureIndex = mom.defaultTextureIndex;
-	previousFramebufferBinding = mom.previousFramebufferBinding;
 }
 
 ofFbo & ofFbo::operator=(const ofFbo & mom){
@@ -315,7 +322,6 @@ ofFbo & ofFbo::operator=(const ofFbo & mom){
 	textures = mom.textures;
 	dirty = mom.dirty;
 	defaultTextureIndex = mom.defaultTextureIndex;
-	previousFramebufferBinding = mom.previousFramebufferBinding;
 	return *this;
 }
 
@@ -435,6 +441,7 @@ void ofFbo::allocate(Settings _settings) {
 	if(!checkGLSupport()) return;
 
 	clear();
+	settings.renderer = _settings.renderer;
 
 	// check that passed values are correct
 	if(_settings.width <= 0 || _settings.height <= 0){
@@ -709,43 +716,37 @@ void ofFbo::createAndAttachDepthStencilTexture(GLenum target, GLint internalform
 //----------------------------------------------------------
 
 void ofFbo::begin(bool setupScreen) const{
-	ofGetGLRenderer()->begin(*this,setupScreen);
+	auto renderer = settings.renderer.lock();
+	if(renderer){
+		renderer->begin(*this,setupScreen);
+	}
 }
 
 //----------------------------------------------------------
 
 void ofFbo::end() const{
-	ofGetGLRenderer()->end(*this);
-}
-
-//----------------------------------------------------------
-
-void ofFbo::setPreviousFramebufferBinding(const GLuint& previousFramebufferBinding_) const {
-	previousFramebufferBinding = previousFramebufferBinding_;
-}
-
-//----------------------------------------------------------
-
-const GLuint& ofFbo::getPreviousFramebufferBinding() const {
-	return previousFramebufferBinding;
+	auto renderer = settings.renderer.lock();
+	if(renderer){
+		renderer->end(*this);
+	}
 }
 
 //----------------------------------------------------------
 
 void ofFbo::bind() const{
-	if (previousFramebufferBinding == fbo){
-		ofLogWarning() << "Framebuffer with id:" << " cannot be bound onto itself. \n" <<
-			"Most probably you forgot to end() the current framebuffer before calling begin() again.";
-		return;
+	auto renderer = settings.renderer.lock();
+	if(renderer){
+		renderer->bind(*this);
 	}
-	// ----------| invariant: previous framebuffer is not the same as current framebuffer
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 }
 
 //----------------------------------------------------------
 
 void ofFbo::unbind() const{
-	glBindFramebuffer(GL_FRAMEBUFFER, previousFramebufferBinding);
+	auto renderer = settings.renderer.lock();
+	if(renderer){
+		renderer->unbind(*this);
+	}
 }
 
 //----------------------------------------------------------
@@ -784,7 +785,6 @@ void ofFbo::setActiveDrawBuffer(int i){
 }
 
 //----------------------------------------------------------
-
 void ofFbo::setActiveDrawBuffers(const vector<int>& ids){
 	if(!bIsAllocated) return;
 #ifndef TARGET_OPENGLES
@@ -806,20 +806,18 @@ void ofFbo::setActiveDrawBuffers(const vector<int>& ids){
 }
 
 //----------------------------------------------------------
-
 void ofFbo::activateAllDrawBuffers(){
 	if(!bIsAllocated) return;
 #ifndef TARGET_OPENGLES
     vector<int> activeBuffers(getNumTextures(),0);
     for(int i=0; i < getNumTextures(); i++){
-            activeBuffers[i] = i;
+    	activeBuffers[i] = i;
     }
     setActiveDrawBuffers(activeBuffers);
 #endif
 }
 
 //----------------------------------------------------------
-
 void ofFbo::setDefaultTextureIndex(int defaultTexture)
 {
 	defaultTextureIndex = defaultTexture;
@@ -833,37 +831,43 @@ int ofFbo::getDefaultTextureIndex() const
 }
 
 //----------------------------------------------------------
-
 ofTexture& ofFbo::getTextureReference(){
 	return getTexture();
 }
 
+//----------------------------------------------------------
 ofTexture& ofFbo::getTextureReference(int attachmentPoint) {
 	return getTexture(attachmentPoint);
 }
 
+//----------------------------------------------------------
 const ofTexture& ofFbo::getTextureReference() const{
 	return getTexture();
 }
 
+//----------------------------------------------------------
 const ofTexture& ofFbo::getTextureReference(int attachmentPoint) const{
 	return getTexture(attachmentPoint);
 }
 
+//----------------------------------------------------------
 ofTexture& ofFbo::getTexture(){
 	return getTexture(defaultTextureIndex);
 }
 
+//----------------------------------------------------------
 ofTexture& ofFbo::getTexture(int attachmentPoint) {
 	updateTexture(attachmentPoint);
     
     return textures[attachmentPoint];
 }
 
+//----------------------------------------------------------
 const ofTexture& ofFbo::getTexture() const{
 	return getTexture(defaultTextureIndex);
 }
 
+//----------------------------------------------------------
 const ofTexture& ofFbo::getTexture(int attachmentPoint) const{
 	ofFbo * mutThis = const_cast<ofFbo*>(this);
 	mutThis->updateTexture(attachmentPoint);
@@ -871,18 +875,22 @@ const ofTexture& ofFbo::getTexture(int attachmentPoint) const{
     return textures[attachmentPoint];
 }
 
+//----------------------------------------------------------
 void ofFbo::setAnchorPercent(float xPct, float yPct){
 	getTexture().setAnchorPercent(xPct, yPct);
 }
 
+//----------------------------------------------------------
 void ofFbo::setAnchorPoint(float x, float y){
 	getTexture().setAnchorPoint(x, y);
 }
 
+//----------------------------------------------------------
 void ofFbo::resetAnchor(){
 	getTexture().resetAnchor();
 }
 
+//----------------------------------------------------------
 void ofFbo::readToPixels(ofPixels & pixels, int attachmentPoint) const{
 	if(!bIsAllocated) return;
 #ifndef TARGET_OPENGLES
@@ -896,6 +904,7 @@ void ofFbo::readToPixels(ofPixels & pixels, int attachmentPoint) const{
 #endif
 }
 
+//----------------------------------------------------------
 void ofFbo::readToPixels(ofShortPixels & pixels, int attachmentPoint) const{
 	if(!bIsAllocated) return;
 #ifndef TARGET_OPENGLES
@@ -909,6 +918,7 @@ void ofFbo::readToPixels(ofShortPixels & pixels, int attachmentPoint) const{
 #endif
 }
 
+//----------------------------------------------------------
 void ofFbo::readToPixels(ofFloatPixels & pixels, int attachmentPoint) const{
 	if(!bIsAllocated) return;
 #ifndef TARGET_OPENGLES
@@ -922,29 +932,29 @@ void ofFbo::readToPixels(ofFloatPixels & pixels, int attachmentPoint) const{
 #endif
 }
 
+//----------------------------------------------------------
 void ofFbo::updateTexture(int attachmentPoint) {
 	if(!bIsAllocated) return;
 #ifndef TARGET_OPENGLES
 	if(fbo != fboTextures && dirty[attachmentPoint]) {
 		
-		// ---------| invariant: if fbo != fboTextures, we are dealing with an MSAA enabled FBO.
+		// if fbo != fboTextures, we are dealing with an MSAA enabled FBO.
+		// and we need to blit one fbo into another to see get the texture
+		// content
 
 		if (!ofIsGLProgrammableRenderer()){
 			// save current drawbuffer
 			glPushAttrib(GL_COLOR_BUFFER_BIT);
 		}
 
-		bind();
-		glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentPoint);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboTextures);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0 + attachmentPoint); 
-		glBlitFramebuffer(0, 0, settings.width, settings.height, 0, 0, settings.width, settings.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0); // reset to defaults
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); 
-		unbind(); // this will restore GL_FRAMEBUFFER to previousFramebufferBinding
+		auto renderer = settings.renderer.lock();
+		if(renderer){
+			renderer->bindForBlitting(*this,*this,attachmentPoint);
+			glBlitFramebuffer(0, 0, settings.width, settings.height, 0, 0, settings.width, settings.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			renderer->unbind(*this);
 		
-		glReadBuffer(GL_BACK);
+			glReadBuffer(GL_BACK);
+		}
 
 		if(!ofIsGLProgrammableRenderer()){
 			// restore current drawbuffer
@@ -955,33 +965,45 @@ void ofFbo::updateTexture(int attachmentPoint) {
 #endif
 }
 
-
-
+//----------------------------------------------------------
 void ofFbo::draw(float x, float y) const{
 	draw(x, y, settings.width, settings.height);
 }
 
-
+//----------------------------------------------------------
 void ofFbo::draw(float x, float y, float width, float height) const{
 	if(!bIsAllocated) return;
     getTexture().draw(x, y, width, height);
 }
 
-
+//----------------------------------------------------------
 GLuint ofFbo::getFbo() const {
 	return fbo;
 }
 
+//----------------------------------------------------------
+GLuint ofFbo::getId() const {
+	return fbo;
+}
+
+//----------------------------------------------------------
+GLuint ofFbo::getIdDrawBuffer() const{
+	return fboTextures;
+}
+
+//----------------------------------------------------------
 float ofFbo::getWidth() const {
 	return settings.width;
 }
 
 
+//----------------------------------------------------------
 float ofFbo::getHeight() const {
 	return settings.height;
 }
 
 
+//----------------------------------------------------------
 bool ofFbo::checkStatus() const {
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	switch(status) {
@@ -1025,6 +1047,7 @@ bool ofFbo::checkStatus() const {
 	return false;
 }
 
+//----------------------------------------------------------
 ofTexture & ofFbo::getDepthTexture(){
 	if(!settings.depthStencilAsTexture){
 		ofLogError("ofFbo") << "getDepthTexture(): frame buffer object " << fbo << " not allocated with depthStencilAsTexture";
@@ -1032,6 +1055,7 @@ ofTexture & ofFbo::getDepthTexture(){
 	return depthBufferTex;
 }
 
+//----------------------------------------------------------
 const ofTexture & ofFbo::getDepthTexture() const{
 	if(!settings.depthStencilAsTexture){
 		ofLogError("ofFbo") << "getDepthTexture(): frame buffer object " << fbo << " not allocated with depthStencilAsTexture";
