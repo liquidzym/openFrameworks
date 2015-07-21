@@ -82,14 +82,6 @@ ofGLProgrammableRenderer::~ofGLProgrammableRenderer() {
 
 //----------------------------------------------------------
 void ofGLProgrammableRenderer::startRender() {
-#ifdef TARGET_OPENGLES
-	// OpenGL ES might have set a default frame buffer for
-	// MSAA rendering to the window, bypassing ofFbo, so we
-	// can't trust ofFbo to have correctly tracked the bind
-	// state. Therefore, we are forced to use the slower glGet() method
-	// to be sure to get the correct default framebuffer.
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFramebufferId);
-#endif
 	currentFramebufferId = defaultFramebufferId;
 	framebufferIdStack.push_back(defaultFramebufferId);
 	matrixStack.setRenderSurface(*window);
@@ -1337,6 +1329,7 @@ void ofGLProgrammableRenderer::bind(const ofFbo & fbo){
 	glBindFramebuffer(GL_FRAMEBUFFER, currentFramebufferId);
 }
 
+#ifndef TARGET_OPENGLES
 //----------------------------------------------------------
 void ofGLProgrammableRenderer::bindForBlitting(const ofFbo & fboSrc, ofFbo & fboDst, int attachmentPoint){
 	if (currentFramebufferId == fboSrc.getId()){
@@ -1356,6 +1349,7 @@ void ofGLProgrammableRenderer::bindForBlitting(const ofFbo & fboSrc, ofFbo & fbo
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboDst.getIdDrawBuffer());
 	glDrawBuffer(GL_COLOR_ATTACHMENT0 + attachmentPoint);
 }
+#endif
 
 //----------------------------------------------------------
 void ofGLProgrammableRenderer::unbind(const ofFbo & fbo){
@@ -2285,6 +2279,16 @@ string ofGLProgrammableRenderer::defaultFragmentShaderHeader(GLenum textureTarge
 
 void ofGLProgrammableRenderer::setup(int _major, int _minor){
 	glGetError();
+#ifdef TARGET_OPENGLES
+	// OpenGL ES might have set a default frame buffer for
+	// MSAA rendering to the window, bypassing ofFbo, so we
+	// can't trust ofFbo to have correctly tracked the bind
+	// state. Therefore, we are forced to use the slower glGet() method
+	// to be sure to get the correct default framebuffer.
+	GLint currentFrameBuffer;
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currentFrameBuffer);
+	defaultFramebufferId = currentFrameBuffer;
+#endif
 
 	major = _major;
 	minor = _minor;
