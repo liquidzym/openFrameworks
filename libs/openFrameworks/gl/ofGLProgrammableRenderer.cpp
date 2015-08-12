@@ -73,6 +73,8 @@ ofGLProgrammableRenderer::ofGLProgrammableRenderer(const ofAppBaseWindow * _wind
 
 	currentFramebufferId = 0;
 	defaultFramebufferId = 0;
+	path.setMode(ofPath::POLYLINES);
+	path.setUseShapeColor(false);
 
 }
 
