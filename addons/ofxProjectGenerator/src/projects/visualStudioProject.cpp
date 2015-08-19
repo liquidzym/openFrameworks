@@ -10,6 +10,7 @@ void visualStudioProject::setup() {
     ;
 }
 
+
 bool visualStudioProject::createProjectFile(){
 
     string project = ofFilePath::join(projectDir,projectName + ".vcxproj");
@@ -220,7 +221,7 @@ void visualStudioProject::addInclude(string includeName){
     //appendValue(doc, "Add", "directory", includeName);
 }
 
-void addLibraryPath(pugi::xpath_node_set & nodes, std::string libFolder) {
+void addLibraryPath(const pugi::xpath_node_set & nodes, std::string libFolder) {
 	for (auto & node : nodes) {
 		string includes = node.node().first_child().value();
 		vector < string > strings = ofSplitString(includes, ";");
@@ -238,7 +239,7 @@ void addLibraryPath(pugi::xpath_node_set & nodes, std::string libFolder) {
 	}
 }
 
-void addLibraryName(pugi::xpath_node_set & nodes, std::string libName) {
+void addLibraryName(const pugi::xpath_node_set & nodes, std::string libName) {
 
 	for (auto & node : nodes) {
 
@@ -284,8 +285,12 @@ void visualStudioProject::addLibrary(const LibraryBinary & lib){
 	else {
 		linkPath = "//Link";
 	}
-	addLibraryPath(doc.select_nodes((linkPath + "AdditionalLibraryDirectories").c_str()), libFolder);
-	addLibraryName(doc.select_nodes((linkPath + "AdditionalDependencies").c_str()), libName);
+    
+    pugi::xpath_node_set addlLibsDir = doc.select_nodes((linkPath + "AdditionalLibraryDirectories").c_str());
+	addLibraryPath(addlLibsDir, libFolder);
+    
+    pugi::xpath_node_set addlDeps = doc.select_nodes((linkPath + "AdditionalDependencies").c_str());
+	addLibraryName(addlDeps, libName);
 
 }
 
