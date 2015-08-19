@@ -9,6 +9,8 @@
 #include "baseProject.h"
 #include "ofFileUtils.h"
 #include "ofLog.h"
+#include "ofConstants.h"
+using namespace std;
 
 void baseProject::setup(string _target){
     target = _target;
@@ -17,9 +19,11 @@ void baseProject::setup(string _target){
 }
 
 bool baseProject::create(string path){
-
     addons.clear();
 
+    if(!ofFilePath::isAbsolute(path)){
+    	path = (std::filesystem::current_path() / std::filesystem::path(path)).string();
+    }
     projectDir = ofFilePath::addTrailingSlash(path);
     projectName = ofFilePath::getFileName(path);
     bool bDoesDirExist = false;
@@ -140,7 +144,7 @@ void baseProject::addAddon(ofAddon & addon){
         addInclude(addon.includePaths[i]);
     }
     for(int i=0;i<(int)addon.libs.size();i++){
-        ofLogVerbose() << "adding addon libs: " << addon.libs[i];
+        ofLogVerbose() << "adding addon libs: " << addon.libs[i].path;
         addLibrary(addon.libs[i]);
     }
     for(int i=0;i<(int)addon.cflags.size();i++){
@@ -184,6 +188,7 @@ void baseProject::parseAddons(){
 	while(!addonsMakeMem.isLastLine()){
 	    string line = addonsMakeMem.getNextLine();
 	    if(line[0] == '#') continue;
+        if(ofTrim(line) == "") continue;
 		ofAddon addon;
 		cout << projectDir << endl;
 		addon.pathToOF = getOFRelPath(projectDir);
