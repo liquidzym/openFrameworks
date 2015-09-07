@@ -282,6 +282,9 @@
     <ClInclude Include="..\..\..\openFrameworks\utils\ofThreadChannel.h">
       <Filter>libs\openFrameworks\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\video\ofVideoWriter.h">
+      <Filter>libs\openFrameworks\video</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\openFrameworks\app\ofAppGlutWindow.cpp">
@@ -484,6 +487,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\openFrameworks\app\ofMainLoop.cpp">
       <Filter>libs\openFrameworks\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\video\ofVideoWriter.cpp">
+      <Filter>libs\openFrameworks\video</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
