@@ -50,12 +50,15 @@ public:
 	 **/
 	bool isInitialized() const { return initialized; }
 	bool isRecording() const { return b_recording; }
-	void start() { if (initialized) b_recording = true; }
+	void start() { if (initialized) { b_recording = true; ofLogNotice("ofVideoWriter") << "Beginning Recording"; } else ofLogError("ofVideoWriter") << "has not be initialized. run setup()"; }
+	void setVideoBitRate(int bitRate) { _videoBR = bitRate; initialized = false; }
+	void setWidth(int width) { _width = width; initialized = false; }
+	void setHeight(int height) { _height = height; initialized = false; }
 
 private:
 	//instance variables
 	AVCodec *codec;
-	int size, frame_count;
+	int size, frame_count, _videoBR, _width, _height, _framerate;
 	AVFrame *_outputFrameData, *_inputFrameData;
 	struct SwsContext *sws_ctx;
 	AVOutputFormat *fmt;

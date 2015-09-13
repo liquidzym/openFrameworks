@@ -96,6 +96,7 @@
 #include "ofVideoGrabber.h"
 #include "ofVideoPlayer.h"
 #include "ofVideoWriter.h"
+#include "ofAVWriter.h"
 
 //--------------------------
 // events
