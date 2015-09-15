@@ -23,6 +23,12 @@ extern "C" {
 #include "ofVideoWriter.h"
 
 void ofVideoWriter::setup(const char* filename, int width, int height, int bitrate, int framerate, AVPixelFormat inputFormat, AVPixelFormat outputFormat) {
+	
+	_height = height;
+	_width = width;
+	_videoBR = bitrate;
+	_framerate = framerate;
+
 	ofLogNotice("ofVideoWriter") << "Video encoding: " << filename;
 	/* register all the formats and codecs */
 	av_register_all();
@@ -194,7 +200,7 @@ void ofVideoWriter::setup(const char* filename, int width, int height, int bitra
 void ofVideoWriter::addFrame(const ofPixels pixels) {
 	if (b_recording) {
 		/* copy the buffer */
-		memcpy(_inputFrameData->data[0], &pixels, size);
+		memcpy(_inputFrameData->data[0], pixels.getData(), size);
 
 		/* convert pixel formats */
 		sws_scale(sws_ctx, _inputFrameData->data, _inputFrameData->linesize, 0, c->height, _outputFrameData->data, _outputFrameData->linesize);
