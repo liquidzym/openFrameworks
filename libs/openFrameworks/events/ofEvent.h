@@ -10,7 +10,7 @@
 class ofEventAttendedException: public std::exception{};
 
 
-template<typename Function, typename Mutex=std::mutex>
+template<typename Function, typename Mutex=std::recursive_mutex>
 class ofBaseEvent{
 public:
 	/// \brief Basic constructor enabling an ofBaseEvent.
@@ -87,15 +87,15 @@ protected:
 	template<typename TFunction>
 	void remove(const TFunction & function){
 		std::unique_lock<Mutex> lck(mtx);
-		functions.erase(std::remove_if(functions.begin(), functions.end(),
-			[&](std::shared_ptr<Function> & f){
-				if(f == function){
-					f->disable();
-					return true;
-				}else{
-					return false;
-				}
-			}), functions.end());
+		auto it = functions.begin();
+		for(; it!=functions.end(); ++it){
+			auto f = *it;
+			if(*f == *function){
+				f->disable();
+				functions.erase(it);
+				break;
+			}
+		}
 	}
 
 	Mutex mtx;
@@ -188,7 +188,7 @@ namespace priv{
 }
 /*! \endcond */
 
-template<typename T, typename Mutex=std::mutex>
+template<typename T, typename Mutex=std::recursive_mutex>
 class ofEvent: public ofBaseEvent<of::priv::Function<T,Mutex>,Mutex>{
 protected:
 	typedef of::priv::Function<T,Mutex> Function;
@@ -435,7 +435,7 @@ template<typename T>
 class ofFastEvent: public ofEvent<T,of::priv::NoopMutex>{
 public:
 	inline void notify(const void* sender, T & param){
-		if(ofFastEvent::enabled && !ofFastEvent::functions.empty()){
+		if(ofFastEvent::enabled){
 			for(auto & f: ofFastEvent::functions){
                 if(f->notify(sender,param)){
                     throw ofEventAttendedException();
