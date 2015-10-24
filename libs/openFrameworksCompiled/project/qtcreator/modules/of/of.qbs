@@ -342,6 +342,17 @@ Module{
         return libs;
     }
 
+    readonly property stringList ADDON_FRAMEWORKS: {
+        var frameworks = [];
+        for(var addon in ADDONS){
+            var addonPath = ADDONS[addon];
+            var addonFrameworks = [];
+            addonFrameworks = Helpers.parseAddonConfig(addonPath, "ADDON_FRAMEWORKS", addonFrameworks, platform, addonPath+"/");
+            frameworks = frameworks.concat(addonFrameworks);
+        }
+        return frameworks;
+    }
+
     readonly property stringList ADDON_PKG_CONFIGS: {
         var pkgconfigs = [];
         for(var addon in ADDONS){
@@ -398,9 +409,15 @@ Module{
     property stringList cxxFlags: []
     property stringList linkerFlags: []
     property stringList defines: []
+    property stringList frameworks: []
 
     Depends{
         name: "cpp"
+    }
+
+    Depends{
+        condition: platform==="osx"
+        name: "bundle"
     }
 
     //cpp.cxxLanguageVersion: "c++14"
@@ -421,10 +438,11 @@ Module{
     }
 
     Properties{
-        condition: qbs.targetOS.contains("osx")
+        condition: platform === "osx"
+        cpp.cxxLanguageVersion: "c++11"
 
         cpp.cxxFlags: PKG_CONFIG_CFLAGS
-            .concat(['-Wno-unused-parameter','-std=c++11'])
+            .concat(['-Wno-unused-parameter'])
             .concat(ADDON_PKG_CONFIG_CFLAGS)
             .concat(ADDON_CFLAGS)
             .concat(cxxFlags)
@@ -445,10 +463,21 @@ Module{
                 'IOKit',
                 'OpenGL',
                 'QuartzCore',
-        ]
+        ].concat(frameworks)
+        .concat(ADDON_FRAMEWORKS)
 
         cpp.installNamePrefix: "@rpath"
         cpp.rpath: "@executable_path/"
+    }
+
+    Properties{
+        condition: qbs.buildVariant.contains("debug") && platform === "osx"
+        bundle.infoPlist: ({"CFBundleIconFile":"icon-debug.icns"})
+    }
+
+    Properties{
+        condition: qbs.buildVariant.contains("release") && platform === "osx"
+        bundle.infoPlist: ({"CFBundleIconFile":"icon.icns"})
     }
 
     cpp.includePaths: INCLUDE_PATHS
