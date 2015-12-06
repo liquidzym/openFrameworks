@@ -221,9 +221,39 @@ public:
 		char buffer;
 		test_eq(client.Receive(&buffer,1), SOCKET_TIMEOUT, "socket timeouts on no receive");
 		auto now = ofGetElapsedTimeMillis();
-        test(now-then>=5000, "Connect waits 5s to timeout, waited: " + ofToString(now - then));
+		// seems timers in the test servers are not very accurate so
+		// we test this with a margin of 500ms
+		test_gt(now-then, 4500, "Connect waits 5s to timeout, waited: " + ofToString(now - then));
 		done.notify_all();
 		serverThread.join();
+	}
+
+	void testSendMaxSize(){
+		ofLogNotice() << "";
+		ofLogNotice() << "---------------------------------------";
+		ofLogNotice() << "testSendMaxSize tests #3478";
+
+		int port = ofRandom(15000, 65535);
+
+		ofxTCPServer server;
+		test(server.setup(port,true), "blocking server");
+
+		ofxTCPClient client;
+		test(client.setup("127.0.0.1", port, true), "blocking client");
+
+		// wait for connection to be made
+		server.waitConnectedClient(500);
+
+		string str;
+		string received;
+		for(int i=0;i<TCP_MAX_MSG_SIZE;i++){
+			str.append(ofToString((int)ofRandom(10)));
+		}
+		test(server.sendRawMsg(0, str.c_str(), str.size()), "could send max size");
+		do{
+			received += client.receiveRaw();
+		}while(received.size()<str.size());
+		test_eq(received, str, "received max size message == sent message");
 	}
 
 	void run(){
@@ -235,6 +265,7 @@ public:
 		testSendRawBytes();
 		testWrongConnect();
 		testReceiveTimeout();
+		testSendMaxSize();
 	}
 };
 
