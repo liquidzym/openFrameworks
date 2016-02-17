@@ -1360,7 +1360,7 @@ inline ofVec2f& ofVec2f::average( const ofVec2f* points, std::size_t num ) {
 	}
 	x = 0.f;
 	y = 0.f;
-	for( std::size_t i=0; i<num; i++) {
+	for( size_t i=0; i<num; i++) {
 		x += points[i].x;
 		y += points[i].y;
 	}
