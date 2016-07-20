@@ -31,7 +31,7 @@ public:
 
     /// \brief Set the camera's target.
     /// \param target The position of the target.
-	void setTarget(const ofVec3f& target);
+	void setTarget(const glm::vec3& target);
 
     /// \brief Set the camera's target.
     /// \param target The position of the target.
@@ -140,7 +140,7 @@ public:
 
 	/// Set the camera fixed up axis for interactive
 	/// manipulation
-	void setUpAxis(const ofVec3f & up);
+	void setUpAxis(const glm::vec3 & up);
 
 	void enableInertia();
 	void disableInertia();
@@ -155,6 +155,7 @@ private:
 	bool bDoTranslate = false;
 	bool bDoRotate = false;
 	bool bDoScrollZoom = false;
+	bool bIsBeingScrolled = false;
 	bool bInsideArcball = false;
 	bool bMouseInputEnabled = false;
 	bool bDistanceSet = false;
@@ -179,8 +180,8 @@ private:
 	float sensitivityRotY = 1.0f;
 	float sensitivityRotZ = 1.0f;
 
-	ofVec2f lastMouse, prevMouse;
-	ofVec2f mouseVel;
+	glm::vec2 lastMouse, prevMouse;
+	glm::vec2 mouseVel;
 	
 	void updateRotation();
 	void updateTranslation();
@@ -190,7 +191,7 @@ private:
 	void mouseDragged(ofMouseEventArgs & mouse);
 	void mouseScrolled(ofMouseEventArgs & mouse);
 	void updateMouse(const ofMouseEventArgs & mouse);
-	ofVec3f up() const;
+	glm::vec3 up() const;
 
     /// \brief The key used to differentiate between translation and rotation.
 	char doTranslationKey = 'm';
@@ -199,22 +200,22 @@ private:
 	unsigned long lastTap = 0;
 
     /// \brief The current rotation quaternion.
-	ofQuaternion curRot;
+	glm::quat curRot;
 
     /// \brief The previous X axis.
-    ofVec3f prevAxisX;
+	glm::vec3 prevAxisX;
 
     /// \brief The previous Y axis.
-    ofVec3f prevAxisY;
+	glm::vec3 prevAxisY;
 
     /// \brief The previous Z axis.
-    ofVec3f prevAxisZ;
+	glm::vec3 prevAxisZ;
 
     /// \brief the previous camera position.
-	ofVec3f prevPosition;
+	glm::vec3 prevPosition;
 
     /// \brief The previous camera orientation.
-	ofQuaternion prevOrientation;
+	glm::quat prevOrientation;
 
 	ofRectangle viewport;
 
@@ -222,5 +223,5 @@ private:
 
 	bool relativeYAxis = false;
 	bool doInertia = false;
-	ofVec3f upAxis{0,1,0};
+	glm::vec3 upAxis{0,1,0};
 };

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ofConstants.h"
-#include "ofPoint.h"
 #include "ofEventUtils.h"
 #include "ofTimer.h"
 #include "ofFpsCounter.h"
@@ -21,7 +20,7 @@ int	ofGetPreviousMouseY();
 class ofDragInfo{
 	public:
 		vector <string> files;
-		ofPoint position;
+		glm::vec2 position;
 };
 
 
@@ -74,7 +73,7 @@ public:
 	uint32_t codepoint;
 };
 
-class ofMouseEventArgs : public ofEventArgs, public ofVec2f {
+class ofMouseEventArgs : public ofEventArgs, public glm::vec2 {
   public:
 	enum Type{
 		Pressed,
@@ -94,7 +93,7 @@ class ofMouseEventArgs : public ofEventArgs, public ofVec2f {
 	{}
 
 	ofMouseEventArgs(Type type, float x, float y, int button)
-	:ofVec2f(x,y)
+	:glm::vec2(x,y)
 	,type(type)
 	,button(button)
 	,scrollX(0.f)
@@ -102,7 +101,7 @@ class ofMouseEventArgs : public ofEventArgs, public ofVec2f {
 	{}
 
 	ofMouseEventArgs(Type type, float x, float y)
-	:ofVec2f(x,y)
+	:glm::vec2(x,y)
 	,type(type)
 	,button(0)
 	,scrollX(0.f)
@@ -115,7 +114,7 @@ class ofMouseEventArgs : public ofEventArgs, public ofVec2f {
 	float scrollY;
 };
 
-class ofTouchEventArgs : public ofEventArgs, public ofVec2f {
+class ofTouchEventArgs : public ofEventArgs, public glm::vec2 {
   public:
 	enum Type{
 		down,
@@ -145,7 +144,7 @@ class ofTouchEventArgs : public ofEventArgs, public ofVec2f {
 	}
 
 	ofTouchEventArgs(Type type, float x, float y, int id)
-	:ofVec2f(x,y)
+	:glm::vec2(x,y)
 	,type(type)
 	,id(id)
 	,time(0)
@@ -259,6 +258,13 @@ class ofCoreEvents {
 	bool notifyMouseEntered(int x, int y);
 	bool notifyMouseExited(int x, int y);
 	bool notifyMouseEvent(const ofMouseEventArgs & mouseEvent);
+	
+	void notifyTouchDown(int x, int y, int touchID);
+	void notifyTouchUp(int x, int y, int touchID);
+	void notifyTouchMoved(int x, int y, int touchID);
+	void notifyTouchCancelled(int x, int y, int touchID);
+	void notifyTouchDoubleTap(int x, int y, int touchID);
+	void notifyTouchEvent(const ofTouchEventArgs & touchEvent);
 
 	bool notifyExit();
 	bool notifyWindowResized(int width, int height);

@@ -213,7 +213,7 @@ void ofAppGLFWWindow::setup(const ofGLFWWindowSettings & _settings){
 					int x = 0, y = 0;
 					settings.monitor = ofClamp(settings.monitor,0,count-1);
 					glfwGetMonitorPos(monitors[settings.monitor],&x,&y);
-					settings.setPosition(ofVec2f(x,y));
+					settings.setPosition(glm::vec2(x,y));
 					setWindowPosition(settings.getPosition().x,settings.getPosition().y);
 					#ifdef TARGET_OSX
 						//for OS X we need to set this first as the window size affects the window positon
@@ -276,7 +276,7 @@ void ofAppGLFWWindow::setup(const ofGLFWWindowSettings & _settings){
     if( framebufferW != windowW ){
         pixelScreenCoordScale = framebufferW / windowW;
 		
-		ofPoint position = getWindowPosition();
+		auto position = getWindowPosition();
 		setWindowShape(windowW, windowH);
 		setWindowPosition(position.x, position.y);
 	}
@@ -455,32 +455,32 @@ int ofAppGLFWWindow::getPixelScreenCoordScale(){
 }
 
 //------------------------------------------------------------
-ofPoint ofAppGLFWWindow::getWindowSize(){
+glm::vec2 ofAppGLFWWindow::getWindowSize(){
 	if(windowMode == OF_GAME_MODE)
 	{
 		const GLFWvidmode * desktopMode = glfwGetVideoMode(glfwGetWindowMonitor(windowP));
 		if(desktopMode){
-			return ofVec3f(desktopMode->width*pixelScreenCoordScale, desktopMode->height*pixelScreenCoordScale,0);
+			return {desktopMode->width*pixelScreenCoordScale, desktopMode->height*pixelScreenCoordScale};
 		}else{
-			return ofPoint(currentW*pixelScreenCoordScale,currentH*pixelScreenCoordScale);
+			return {currentW*pixelScreenCoordScale, currentH*pixelScreenCoordScale};
 		}
 	}else{
-		return ofPoint(currentW*pixelScreenCoordScale,currentH*pixelScreenCoordScale);
+		return {currentW*pixelScreenCoordScale, currentH*pixelScreenCoordScale};
 	}
 }
 
 //------------------------------------------------------------
-ofPoint ofAppGLFWWindow::getWindowPosition(){
-    int x, y; 
+glm::vec2 ofAppGLFWWindow::getWindowPosition(){
+	int x, y;
 	glfwGetWindowPos(windowP, &x, &y);
     
     x *= pixelScreenCoordScale;
     y *= pixelScreenCoordScale;
 
 	if( orientation == OF_ORIENTATION_DEFAULT || orientation == OF_ORIENTATION_180 ){
-		return ofPoint(x,y,0);
+		return glm::vec2{x,y};
 	}else{
-		return ofPoint(x,y,0); //NOTE: shouldn't this be (y,x) ??????
+		return glm::vec2(x,y); //NOTE: shouldn't this be (y,x) ??????
 	}
 }
 
@@ -509,7 +509,7 @@ int ofAppGLFWWindow::getCurrentMonitor(){
 
 
 //------------------------------------------------------------
-ofPoint ofAppGLFWWindow::getScreenSize(){
+glm::vec2 ofAppGLFWWindow::getScreenSize(){
 	int count;
 	GLFWmonitor** monitors = glfwGetMonitors(&count);
 	if(count>0){
@@ -517,14 +517,13 @@ ofPoint ofAppGLFWWindow::getScreenSize(){
 		const GLFWvidmode * desktopMode = glfwGetVideoMode(monitors[currentMonitor]);
 		if(desktopMode){
 			if( orientation == OF_ORIENTATION_DEFAULT || orientation == OF_ORIENTATION_180 ){
-				return ofVec3f(desktopMode->width*pixelScreenCoordScale, desktopMode->height*pixelScreenCoordScale,0);
+				return {desktopMode->width*pixelScreenCoordScale, desktopMode->height*pixelScreenCoordScale};
 			}else{
-				return ofVec3f(desktopMode->height*pixelScreenCoordScale, desktopMode->width*pixelScreenCoordScale, 0);
+				return {desktopMode->height*pixelScreenCoordScale, desktopMode->width*pixelScreenCoordScale};
 			}
 		}
 	}
-
-	return {0.f, 0.f};
+	return glm::vec2();
 }
 
 //------------------------------------------------------------
@@ -570,7 +569,7 @@ void ofAppGLFWWindow::setWindowShape(int w, int h){
 	currentH = h/pixelScreenCoordScale;
 	
 	#ifdef TARGET_OSX
-		ofPoint pos = getWindowPosition();
+		auto pos = getWindowPosition();
 		glfwSetWindowSize(windowP,currentW,currentH);
 		if( pos != getWindowPosition() ){
 			setWindowPosition(pos.x, pos.y);
@@ -688,6 +687,7 @@ void ofAppGLFWWindow::setFullscreen(bool fullscreen){
 			}
 		}
 	}
+ 
 	// send fullscreen event
 	Atom m_net_state= XInternAtom(display, "_NET_WM_STATE", false);
 	Atom m_net_fullscreen= XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", false);
@@ -743,7 +743,7 @@ void ofAppGLFWWindow::setFullscreen(bool fullscreen){
 		ofRectangle allScreensSpace;
 		
 		// save window shape before going fullscreen
-		ofPoint pos = getWindowPosition();
+		auto pos = getWindowPosition();
 		windowRect.x = pos.x;
 		windowRect.y = pos.y;
 		windowRect.width = windowW;
@@ -826,7 +826,7 @@ void ofAppGLFWWindow::setFullscreen(bool fullscreen){
 #elif defined(TARGET_WIN32)
     if( windowMode == OF_FULLSCREEN){
 		// save window shape before going fullscreen
-		ofPoint pos = getWindowPosition();
+		auto pos = getWindowPosition();
 		windowRect.x = pos.x;
 		windowRect.y = pos.y;
 		windowRect.width = windowW;
@@ -1045,7 +1045,7 @@ void ofAppGLFWWindow::scroll_cb(GLFWwindow* windowP_, double x, double y) {
 void ofAppGLFWWindow::drop_cb(GLFWwindow* windowP_, int numFiles, const char** dropString) {
 	ofAppGLFWWindow * instance = setCurrent(windowP_);
 	ofDragInfo drag;
-	drag.position.set(instance->events().getMouseX(), instance->events().getMouseY());
+	drag.position = {instance->events().getMouseX(), instance->events().getMouseY()};
 	drag.files.resize(numFiles);
 	for(int i=0; i<(int)drag.files.size(); i++){
 		drag.files[i] = std::filesystem::path(dropString[i]).string();
