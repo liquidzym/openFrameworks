@@ -67,11 +67,6 @@ enum ofTargetPlatform{
 #include <unordered_map>
 #include <memory>
 
-#include "json.hpp"
-
-// for convenience
-using ofJson = nlohmann::json;
-
 #define GLM_SWIZZLE
 #define GLM_FORCE_SIZE_FUNC
 #include "glm/glm.hpp"
