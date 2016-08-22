@@ -50,7 +50,8 @@ public:
 	void remove(int id);
 	void clear();
     void stop();
-	ofHttpResponse handleRequest(ofHttpRequest request);
+    ofHttpResponse handleRequest(const ofHttpRequest & request);
+    int handleRequestAsync(const ofHttpRequest& request); // returns id
 
 protected:
 	// threading -----------------------------------------------
@@ -95,9 +96,9 @@ ofHttpResponse ofURLFileLoaderImpl::get(const string& url) {
 
 int ofURLFileLoaderImpl::getAsync(const string& url, const string& name){
     ofHttpRequest request(url, name.empty() ? url : name);
-	requests.send(request);
-	start();
-	return request.getId();
+    requests.send(request);
+    start();
+    return request.getId();
 }
 
 
@@ -166,7 +167,7 @@ void ofURLFileLoaderImpl::threadedFunction() {
 	}
 }
 
-ofHttpResponse ofURLFileLoaderImpl::handleRequest(ofHttpRequest request) {
+ofHttpResponse ofURLFileLoaderImpl::handleRequest(const ofHttpRequest & request) {
 	try {
 		URI uri(request.url);
 		std::string path(uri.getPathAndQuery());
@@ -178,7 +179,7 @@ ofHttpResponse ofURLFileLoaderImpl::handleRequest(ofHttpRequest request) {
 			pocoMethod = HTTPRequest::HTTP_POST;
 		}
 		HTTPRequest req(pocoMethod, path, HTTPMessage::HTTP_1_1);
-		for(map<string,string>::iterator it = request.headers.begin(); it!=request.headers.end(); it++){
+        for(map<string,string>::const_iterator it = request.headers.cbegin(); it!=request.headers.cend(); it++){
 			req.add(it->first,it->second);
 		}
 		HTTPResponse res;
@@ -233,7 +234,14 @@ ofHttpResponse ofURLFileLoaderImpl::handleRequest(ofHttpRequest request) {
 
 	return ofHttpResponse(request,-1,"ofURLFileLoader: fatal error, couldn't catch Exception");
 	
-}	
+}
+
+
+int ofURLFileLoaderImpl::handleRequestAsync(const ofHttpRequest& request){
+	requests.send(request);
+	start();
+	return request.getId();
+}
 
 void ofURLFileLoaderImpl::update(ofEventArgs & args){
 	ofHttpResponse response;
@@ -280,8 +288,12 @@ void ofURLFileLoader::stop(){
 	impl->stop();
 }
 
-ofHttpResponse ofURLFileLoader::handleRequest(ofHttpRequest & request){
+ofHttpResponse ofURLFileLoader::handleRequest(const ofHttpRequest & request){
 	return impl->handleRequest(request);
+}
+
+int ofURLFileLoader::handleRequestAsync(const ofHttpRequest& request){
+	return impl->handleRequestAsync(request);
 }
 
 static bool initialized = false;

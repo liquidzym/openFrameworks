@@ -149,7 +149,12 @@ class ofURLFileLoader  {
 		// \brief low level HTTP request implementation
 		/// blocks until a response is returned or the request times out
 		/// \return HTTP response on success or failure
-        ofHttpResponse handleRequest(ofHttpRequest & request);
+        ofHttpResponse handleRequest(const ofHttpRequest & request);
+	
+		// \brief low level HTTP request implementation
+		/// this is a non-blocking version of handleRequest that will return a response in the urlResponse callback
+		/// \return unique id of the active HTTP request
+        int handleRequestAsync(const ofHttpRequest& request);
 
     private:
         shared_ptr<ofBaseURLFileLoader> impl;

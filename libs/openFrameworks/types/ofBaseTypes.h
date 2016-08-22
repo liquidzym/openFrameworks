@@ -36,7 +36,6 @@ class ofMesh_;
 using ofMesh = ofMesh_<ofDefaultVertexType, ofDefaultNormalType, ofDefaultColorType, ofDefaultTexCoordType>;
 
 class ofPath;
-class ofFbo;
 class of3dPrimitive;
 class ofLight;
 class ofMaterial;
@@ -48,6 +47,8 @@ class of3dGraphics;
 class ofVbo;
 class ofVboMesh;
 class ofSoundBuffer;
+class ofFbo;
+enum class ofFboBeginMode : short;
 
 
 bool ofIsVFlipped();
@@ -1923,7 +1924,7 @@ public:
 #ifndef TARGET_OPENGLES
 	virtual void bindForBlitting(const ofFbo & fboSrc, ofFbo & fboDst, int attachmentPoint=0)=0;
 #endif
-	virtual void begin(const ofFbo & fbo, bool setupPerspective)=0;
+    virtual void begin(const ofFbo & fbo, ofFboBeginMode mode)=0;
 	virtual void end(const ofFbo & fbo)=0;
 
 };
@@ -1947,7 +1948,7 @@ public:
 	/// \param name optional key to use when sorting requests
 	/// \return unique id for the active HTTP request
 	virtual int getAsync(const string& url, const string& name="")=0;
-	
+
 	/// \brief make an HTTP request and save the response data to a file
 	/// blocks until a response is returned or the request times out
 	/// \param url HTTP url to request, ie. "http://somewebsite.com/someapi/someimage.jpg"
@@ -1975,7 +1976,9 @@ public:
 	/// \brief low level HTTP request implementation
 	/// blocks until a response is returned or the request times out
 	/// \return HTTP response on success or failure
-	virtual ofHttpResponse handleRequest(ofHttpRequest request) = 0;
+    virtual ofHttpResponse handleRequest(const ofHttpRequest & request) = 0;
+	virtual int handleRequestAsync(const ofHttpRequest& request)=0; // returns id
+	
 };
 
 /// \class ofBaseMaterial

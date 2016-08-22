@@ -41,9 +41,14 @@ int ofxEmscriptenURLFileLoader::saveAsync(const string &  url, const string &  p
 	return 0;
 }
 
-ofHttpResponse handleRequest(ofHttpRequest request){
+ofHttpResponse handleRequest(const ofHttpRequest & request){
 	ofLogWarning() << "handleRequest is still not implemented on emscripten";
 	return ofHttpResponse();
+}
+
+int handleRequestAsync(const ofHttpRequest & request){
+	ofLogWarning() << "handleRequest is still not implemented on emscripten";
+	return -1;
 }
 
 void ofxEmscriptenURLFileLoader::remove(int id){
