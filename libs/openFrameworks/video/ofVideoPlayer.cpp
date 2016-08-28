@@ -487,4 +487,3 @@ bool ofVideoPlayer::isInitialized() const{
 	return false;
 }
 
-
