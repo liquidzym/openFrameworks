@@ -292,7 +292,7 @@ bool ofShader::setupShaderFromFile(GLenum type, std::filesystem::path filename) 
 	if(buffer.size()) {
 		return setupShaderFromSource(type, buffer.getText(), sourceDirectoryPath);
 	} else {
-		ofLogError("ofShader") << "setupShaderFromFile(): couldn't load " << nameForType(type) << " shader " << " from \"" << filename << "\"";
+		ofLogError("ofShader") << "setupShaderFromFile(): couldn't load " << nameForType(type) << " shader " << " from \"" << absoluteFilePath << "\"";
 		return false;
 	}
 }
@@ -307,7 +307,7 @@ ofShader::Source ofShader::sourceFromFile(GLenum type, std::filesystem::path fil
 	if(buffer.size()) {
 		return std::move(Source{type, buffer.getText(), sourceDirectoryPath});
 	} else {
-		ofLogError("ofShader") << "setupShaderFromFile(): couldn't load " << nameForType(type) << " shader " << " from \"" << filename << "\"";
+		ofLogError("ofShader") << "setupShaderFromFile(): couldn't load " << nameForType(type) << " shader " << " from \"" << absoluteFilePath << "\"";
 		return Source{};
 	}
 }
@@ -1319,8 +1319,6 @@ void ofShader::printActiveUniformBlocks()  const{
 		GLint uniformBlockMaxLength = 0;
 		glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &uniformBlockMaxLength);
 
-		GLint count = -1;
-		GLenum type = 0;
 		GLchar* uniformBlockName = new GLchar[uniformBlockMaxLength];
 		stringstream line;
 		for(GLint i = 0; i < numUniformBlocks; i++) {
