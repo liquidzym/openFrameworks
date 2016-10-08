@@ -134,7 +134,7 @@ function createProjectFiles {
         git pull origin master
         cd commandLine
         echo "Recompiling command line PG"
-        PROJECT_OPTIMIZATION_CFLAGS_RELEASE=-O3 make -j2 > /dev/null
+        PROJECT_OPTIMIZATION_CFLAGS_RELEASE=-O0 CXXFLAGS=-ftrack-macro-expansion=0 make > /dev/null
         cd ${pkg_ofroot}
         echo "Creating project files for $pkg_platform"
         ${main_ofroot}/apps/projectGenerator/commandLine/bin/projectGenerator --recursive -p${pkg_platform} -o$pkg_ofroot $pkg_ofroot/examples > /dev/null
@@ -593,6 +593,7 @@ set -o errexit   # set -e : exit the script if any statement returns a non-true 
 cleanup() {
     cd $packageroot/..  
     rm -rf ${pkgfolder} 
+    rm -rf $HOME/.tmp/npm*
 }
 trap cleanup 0
 
@@ -606,7 +607,7 @@ error() {
     local code="${2:-1}"
     echo "Error on or near line ${parent_lineno}; exiting with status ${code}"
   fi
-  exit "${code}"
+  rm -rf $HOME/.tmp/npm*
 }
 trap 'error ${LINENO}' ERR
 
