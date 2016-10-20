@@ -255,9 +255,6 @@
     <ClInclude Include="..\..\..\openFrameworks\app\ofAppNoWindow.h">
       <Filter>libs\openFrameworks\app</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\openFrameworks\utils\ofXml.h">
-      <Filter>libs\openFrameworks\utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\openFrameworks\gl\ofBufferObject.h">
       <Filter>libs\openFrameworks\gl</Filter>
     </ClInclude>
@@ -282,11 +279,8 @@
     <ClInclude Include="..\..\..\openFrameworks\utils\ofThreadChannel.h">
       <Filter>libs\openFrameworks\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\openFrameworks\video\ofVideoWriter.h">
-      <Filter>libs\openFrameworks\video</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\openFrameworks\video\ofAVWriter.h">
-      <Filter>libs\openFrameworks\video</Filter>
+    <ClInclude Include="..\..\..\openFrameworks\utils\ofXml.h">
+      <Filter>libs\openFrameworks\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -458,9 +452,6 @@
     <ClCompile Include="..\..\..\openFrameworks\app\ofAppNoWindow.cpp">
       <Filter>libs\openFrameworks\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\openFrameworks\utils\ofXml.cpp">
-      <Filter>libs\openFrameworks\utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\openFrameworks\utils\ofFpsCounter.cpp">
       <Filter>libs\openFrameworks\utils</Filter>
     </ClCompile>
@@ -482,11 +473,8 @@
     <ClCompile Include="..\..\..\openFrameworks\app\ofMainLoop.cpp">
       <Filter>libs\openFrameworks\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\openFrameworks\video\ofVideoWriter.cpp">
-      <Filter>libs\openFrameworks\video</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\openFrameworks\video\ofAVWriter.cpp">
-      <Filter>libs\openFrameworks\video</Filter>
+    <ClCompile Include="..\..\..\openFrameworks\utils\ofXml.cpp">
+      <Filter>libs\openFrameworks\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

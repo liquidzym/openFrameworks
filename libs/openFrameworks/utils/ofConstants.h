@@ -948,8 +948,3 @@ using ofDefaultNormalType = ofDefaultVec3;
 using ofDefaultColorType = ofFloatColor;
 using ofDefaultTexCoordType = ofDefaultVec2;
 
-#if defined(TARGET_EMSCRIPTEN)
-	#define OF_USE_POCO 0
-#elif !defined(OF_USE_POCO)
-	#define OF_USE_POCO 1
-#endif
