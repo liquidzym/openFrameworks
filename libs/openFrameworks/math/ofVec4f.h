@@ -43,11 +43,11 @@ public:
 		return (const float *)&x;
 	}
 	
-	float& operator[]( int n ){
+	float& operator[]( size_t n ){
 		return getPtr()[n];
 	}
 	
-	float operator[]( int n ) const {
+	float operator[]( size_t n ) const {
 		return getPtr()[n];
 	}
 

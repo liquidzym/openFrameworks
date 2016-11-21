@@ -2,6 +2,7 @@ var Process = loadExtension("qbs.Process");
 var File = loadExtension("qbs.File");
 var TextFile = loadExtension("qbs.TextFile");
 var Environment = loadExtension("qbs.Environment");
+var FileInfo = loadExtension("qbs.FileInfo");
 
 
 function msys2root(){
@@ -79,6 +80,12 @@ function listDirsRecursive(dir){
 function hasExtension(str, extension){
     var suffix = "." + extension;
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
+}
+
+function pkgExists(pkg){
+    var pkgconfig = new Process();
+    pkgconfig.exec("pkg-config", ["--exists", pkg]);
+    return pkgconfig.exitCode() === 0;
 }
 
 function findLibsRecursive(dir, platform, exclude){
@@ -208,7 +215,7 @@ function addonIncludes(addon){
 function addonSources(addon){
     var sources = findSourceRecursive(addon + '/src')
     try{
-        sources = sources.concat(Helpers.findSourceRecursive(addon + '/libs'));
+        sources = sources.concat(findSourceRecursive(addon + '/libs'));
     }catch(e){}
     return sources;
 }

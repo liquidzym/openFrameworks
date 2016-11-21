@@ -3,4 +3,4 @@
 	url = https://github.com/openframeworks/projectGenerator.git
 [submodule "scripts/apothecary"]
 	path = scripts/apothecary
-	url = https://github.com/openframeworks/apothecary
+	url = https://github.com/openframeworks-vk/apothecary.git 

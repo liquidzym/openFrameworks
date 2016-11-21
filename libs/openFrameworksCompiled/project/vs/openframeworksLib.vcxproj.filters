@@ -43,6 +43,18 @@
     <Filter Include="libs\openFrameworks\gl\shaders">
       <UniqueIdentifier>{5f96bf6a-8a5d-485f-a2ec-68642528d3ce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\openFrameworks\vk">
+      <UniqueIdentifier>{71a0f1db-b957-422a-93d0-8b3123045ce2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\openFrameworks\vk\Allocator">
+      <UniqueIdentifier>{d7762e78-b578-44fb-b582-f5648927779c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\openFrameworks\vk\spooky">
+      <UniqueIdentifier>{609eeb49-ba65-437e-b154-83f3f47d2782}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\openFrameworks\vk\spirv-cross">
+      <UniqueIdentifier>{c893a6db-10ae-4449-b208-46c17e58c303}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\openFrameworks\ofMain.h">
@@ -282,6 +294,63 @@
     <ClInclude Include="..\..\..\openFrameworks\utils\ofXml.h">
       <Filter>libs\openFrameworks\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\DrawCommand.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\HelperTypes.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\ofVkRenderer.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\Pipeline.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\RenderBatch.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\RenderContext.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\RenderPass.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\Shader.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\Swapchain.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\Texture.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\Allocator.h">
+      <Filter>libs\openFrameworks\vk\Allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\BufferAllocator.h">
+      <Filter>libs\openFrameworks\vk\Allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\ImageAllocator.h">
+      <Filter>libs\openFrameworks\vk\Allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\spooky\SpookyV2.h">
+      <Filter>libs\openFrameworks\vk\spooky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\spirv-cross\include\GLSL.std.450.h">
+      <Filter>libs\openFrameworks\vk\spirv-cross</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\spirv-cross\include\spirv.hpp">
+      <Filter>libs\openFrameworks\vk\spirv-cross</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\spirv-cross\include\spirv_common.hpp">
+      <Filter>libs\openFrameworks\vk\spirv-cross</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\spirv-cross\include\spirv_cross.hpp">
+      <Filter>libs\openFrameworks\vk\spirv-cross</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\openFrameworks\vk\ComputeCommand.h">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\openFrameworks\app\ofAppRunner.cpp">
@@ -476,6 +545,48 @@
     <ClCompile Include="..\..\..\openFrameworks\utils\ofXml.cpp">
       <Filter>libs\openFrameworks\utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\DrawCommand.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\ofVkRenderer.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\ofVkRendererImpl.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\Pipeline.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\RenderBatch.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\RenderContext.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\Shader.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\Swapchain.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\Texture.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\BufferAllocator.cpp">
+      <Filter>libs\openFrameworks\vk\Allocator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\ImageAllocator.cpp">
+      <Filter>libs\openFrameworks\vk\Allocator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\spooky\SpookyV2.cpp">
+      <Filter>libs\openFrameworks\vk\spooky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\spirv-cross\include\spirv_cross.cpp">
+      <Filter>libs\openFrameworks\vk\spirv-cross</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\openFrameworks\vk\ComputeCommand.cpp">
+      <Filter>libs\openFrameworks\vk</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\openFrameworks\3d\ofMesh.inl">
@@ -489,6 +600,9 @@
     </None>
     <None Include="..\..\..\openFrameworks\gl\shaders\phong.vert">
       <Filter>libs\openFrameworks\gl\shaders</Filter>
+    </None>
+    <None Include="..\..\..\openFrameworks\vk\README.md">
+      <Filter>libs\openFrameworks\vk</Filter>
     </None>
   </ItemGroup>
 </Project>

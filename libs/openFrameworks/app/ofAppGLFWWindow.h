@@ -2,7 +2,11 @@
 
 #include "ofConstants.h"
 
-#define GLFW_INCLUDE_NONE
+#ifdef OF_TARGET_API_VULKAN
+	#define GLFW_INCLUDE_VULKAN
+#else
+	#define GLFW_INCLUDE_NONE
+#endif
 #include "GLFW/glfw3.h"
 
 #include "ofAppBaseWindow.h"
@@ -14,6 +18,8 @@ class ofBaseApp;
 
 #ifdef TARGET_OPENGLES
 class ofGLFWWindowSettings: public ofGLESWindowSettings{
+#elif defined(OF_TARGET_API_VULKAN)
+class ofGLFWWindowSettings : public ofVkWindowSettings{
 #else
 class ofGLFWWindowSettings: public ofGLWindowSettings{
 #endif
@@ -22,12 +28,16 @@ public:
 
 #ifdef TARGET_OPENGLES
 	ofGLFWWindowSettings(const ofGLESWindowSettings & settings)
-	:ofGLESWindowSettings(settings){}
+		: ofGLESWindowSettings(settings){}
+#elif defined(OF_TARGET_API_VULKAN)
+	ofGLFWWindowSettings( const ofVkWindowSettings & settings )
+		: ofVkWindowSettings( settings ){}
 #else
 	ofGLFWWindowSettings(const ofGLWindowSettings & settings)
-	:ofGLWindowSettings(settings){}
+		: ofGLWindowSettings(settings){}
 #endif
 
+#ifndef OF_TARGET_API_VULKAN
 	int numSamples = 4;
 	bool doubleBuffering = true;
 	int redBits = 8;
@@ -37,17 +47,20 @@ public:
 	int depthBits = 24;
 	int stencilBits = 0;
 	bool stereo = false;
+	shared_ptr<ofAppBaseWindow> shareContextWith;
+#endif
+	bool multiMonitorFullScreen = false;
 	bool visible = true;
 	bool iconified = false;
 	bool decorated = true;
 	bool resizable = true;
 	int monitor = 0;
-	bool multiMonitorFullScreen = false;
-	shared_ptr<ofAppBaseWindow> shareContextWith;
 };
 
-#ifdef TARGET_OPENGLES
+#if defined(TARGET_OPENGLES)
 class ofAppGLFWWindow : public ofAppBaseGLESWindow{
+#elif defined(OF_TARGET_API_VULKAN)
+class ofAppGLFWWindow : public ofAppBaseVkWindow {
 #else
 class ofAppGLFWWindow : public ofAppBaseGLWindow {
 #endif
@@ -72,6 +85,15 @@ public:
     using ofAppBaseWindow::setup;
 #ifdef TARGET_OPENGLES
 	void setup(const ofGLESWindowSettings & settings);
+#elif defined(OF_TARGET_API_VULKAN)
+	
+	void setup( const ofVkWindowSettings & settings );
+
+	// Create a vkSurface using GLFW. The surface is owned by the current renderer.
+	VkResult             createVkSurface();
+	// Return vkSurface used to render to this window 
+	const VkSurfaceKHR&  getVkSurface();
+
 #else
 	void setup(const ofGLWindowSettings & settings);
 #endif
@@ -122,8 +144,11 @@ public:
 
     int         getPixelScreenCoordScale();
 
-    void 		makeCurrent();
-	void swapBuffers();
+#ifndef OF_TARGET_API_VULKAN
+    void        makeCurrent();
+	void        swapBuffers();
+#endif
+
 	void startRender();
 	void finishRender();
 
@@ -133,16 +158,6 @@ public:
 	bool isWindowActive();
 	bool isWindowResizeable();
 	void iconify(bool bIconify);
-
-	// window settings, this functions can only be called from main before calling ofSetupOpenGL
-	// TODO: remove specialized version of ofSetupOpenGL when these go away
-	OF_DEPRECATED_MSG("use ofGLFWWindowSettings to create the window instead", void setNumSamples(int samples));
-	OF_DEPRECATED_MSG("use ofGLFWWindowSettings to create the window instead", void setDoubleBuffering(bool doubleBuff));
-	OF_DEPRECATED_MSG("use ofGLFWWindowSettings to create the window instead", void setColorBits(int r, int g, int b));
-	OF_DEPRECATED_MSG("use ofGLFWWindowSettings to create the window instead", void setAlphaBits(int a));
-	OF_DEPRECATED_MSG("use ofGLFWWindowSettings to create the window instead", void setDepthBits(int depth));
-	OF_DEPRECATED_MSG("use ofGLFWWindowSettings to create the window instead", void setStencilBits(int stencil));
-	OF_DEPRECATED_MSG("use ofGLFWWindowSettings to create the window instead", void setMultiDisplayFullscreen(bool bMultiFullscreen)); //note this just enables the mode, you have to toggle fullscreen to activate it.
 
 #if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
 	Display* 	getX11Display();

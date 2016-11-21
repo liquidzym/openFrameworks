@@ -1,3 +1,14 @@
+================
+
+#Experimental Vulkan Renderer branch 
+
+For mainline openFrameworks goto: 
+[https://github.com/openframeworks/openFrameworks](https://github.com/openframeworks/openFrameworks)
+
+Also take a look at the Vulkan specific README in [libs/openFrameworks/vk](https://github.com/openframeworks-vk/openFrameworks/tree/vk/libs/openFrameworks/vk)
+
+================
+
 [openFrameworks](http://openframeworks.cc/)
 ================
 

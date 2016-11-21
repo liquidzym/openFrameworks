@@ -54,6 +54,7 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="of-shaderc.props" />
     <Import Project="$(ProjectDir)\openFrameworksCommon.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
@@ -62,6 +63,7 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="of-shadercD.props" />
     <Import Project="$(ProjectDir)\openFrameworksCommon.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -106,6 +108,7 @@
       <WarningLevel>Level3</WarningLevel>
       <BrowseInformation>false</BrowseInformation>
       <CompileAs>CompileAsCpp</CompileAs>
+      <DisableSpecificWarnings>4996; 4267</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -208,6 +211,25 @@
     <ClInclude Include="..\..\..\openFrameworks\communication\ofSerial.h" />
     <ClInclude Include="..\..\..\openFrameworks\events\ofEvents.h" />
     <ClInclude Include="..\..\..\openFrameworks\events\ofEventUtils.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\Allocator.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\BufferAllocator.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\ComputeCommand.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\DrawCommand.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\HelperTypes.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\ImageAllocator.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\ofVkRenderer.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\Pipeline.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\RenderBatch.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\RenderContext.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\RenderPass.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\Shader.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\spirv-cross\include\GLSL.std.450.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\spirv-cross\include\spirv.hpp" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\spirv-cross\include\spirv_common.hpp" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\spirv-cross\include\spirv_cross.hpp" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\spooky\SpookyV2.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\Swapchain.h" />
+    <ClInclude Include="..\..\..\openFrameworks\vk\Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\openFrameworks\3d\of3dPrimitives.cpp" />
@@ -274,12 +296,27 @@
     <ClCompile Include="..\..\..\openFrameworks\video\ofVideoPlayer.cpp" />
     <ClCompile Include="..\..\..\openFrameworks\communication\ofArduino.cpp" />
     <ClCompile Include="..\..\..\openFrameworks\communication\ofSerial.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\BufferAllocator.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\ComputeCommand.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\DrawCommand.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\ImageAllocator.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\ofVkRenderer.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\ofVkRendererImpl.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\Pipeline.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\RenderBatch.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\RenderContext.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\Shader.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\spirv-cross\include\spirv_cross.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\spooky\SpookyV2.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\Swapchain.cpp" />
+    <ClCompile Include="..\..\..\openFrameworks\vk\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\openFrameworks\3d\ofMesh.inl" />
     <None Include="..\..\..\openFrameworks\gl\shaders\phong.frag" />
     <None Include="..\..\..\openFrameworks\gl\shaders\phong.vert" />
     <None Include="..\..\..\openFrameworks\graphics\ofPolyline.inl" />
+    <None Include="..\..\..\openFrameworks\vk\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

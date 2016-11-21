@@ -2,8 +2,12 @@
 #include "ofEvents.h"
 
 #include "ofBaseApp.h"
-#include "ofGLRenderer.h"
-#include "ofGLProgrammableRenderer.h"
+#ifdef OF_TARGET_API_VULKAN
+	#include "ofVkRenderer.h"	
+#else
+	#include "ofGLRenderer.h"
+	#include "ofGLProgrammableRenderer.h"
+#endif // !OF_TARGET_API_VULKAN
 #include "ofAppRunner.h"
 #include "ofFileUtils.h"
 
@@ -82,61 +86,27 @@ void ofAppGLFWWindow::close(){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWWindow::setNumSamples(int _samples){
-	settings.numSamples=_samples;
-}
-
-//------------------------------------------------------------
-void ofAppGLFWWindow::setMultiDisplayFullscreen(bool bMultiFullscreen){
-    settings.multiMonitorFullScreen = bMultiFullscreen;
-}
-
-//------------------------------------------------------------
-void ofAppGLFWWindow::setDoubleBuffering(bool doubleBuff){
-	settings.doubleBuffering = doubleBuff;
-}
-
-//------------------------------------------------------------
-void ofAppGLFWWindow::setColorBits(int r, int g, int b){
-	settings.redBits=r;
-	settings.greenBits=g;
-	settings.blueBits=b;
-}
-
-//------------------------------------------------------------
-void ofAppGLFWWindow::setAlphaBits(int a){
-	settings.alphaBits=a;
-}
-
-//------------------------------------------------------------
-void ofAppGLFWWindow::setDepthBits(int depth){
-	settings.depthBits=depth;
-}
-
-//------------------------------------------------------------
-void ofAppGLFWWindow::setStencilBits(int stencil){
-	settings.stencilBits=stencil;
-}
-
-//------------------------------------------------------------
 #ifdef TARGET_OPENGLES
 void ofAppGLFWWindow::setup(const ofGLESWindowSettings & settings){
+#elif defined(OF_TARGET_API_VULKAN)
+void ofAppGLFWWindow::setup( const ofVkWindowSettings & settings ){
 #else
 void ofAppGLFWWindow::setup(const ofGLWindowSettings & settings){
 #endif
-	const ofGLFWWindowSettings * glSettings = dynamic_cast<const ofGLFWWindowSettings*>(&settings);
-	if(glSettings){
-		setup(*glSettings);
+	const ofGLFWWindowSettings * glfwSettings = dynamic_cast<const ofGLFWWindowSettings*>(&settings);
+	if( glfwSettings ){
+		setup( *glfwSettings );
 	}else{
-		setup(ofGLFWWindowSettings(settings));
+		setup(ofGLFWWindowSettings( settings ));
 	}
 }
 
+//------------------------------------------------------------
 void ofAppGLFWWindow::setup(const ofGLFWWindowSettings & _settings){
 	if(windowP){
 		ofLogError() << "window already setup, probably you are mixing old and new style setup";
 		ofLogError() << "call only ofCreateWindow(settings) or ofSetupOpenGL(...)";
-		ofLogError() << "calling window->setup() after ofCreateWindow() is not necesary and won't do anything";
+		ofLogError() << "calling window->setup() after ofCreateWindow() is not necessary and won't do anything";
 		return;
 	}
 	settings = _settings;
@@ -146,8 +116,61 @@ void ofAppGLFWWindow::setup(const ofGLFWWindowSettings & _settings){
 		return;
 	}
 
-//	ofLogNotice("ofAppGLFWWindow") << "WINDOW MODE IS " << screenMode;
+#if defined (OF_TARGET_API_VULKAN)
+	// initialise Vulkan backed window
+	if ( glfwVulkanSupported() ){
+		ofLog() << "Vulkan supported.";
 
+		// all vulkan setup happens here.
+		glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
+
+		windowP = glfwCreateWindow( settings.width,
+			settings.height,
+			settings.title.c_str(),
+			NULL,
+			NULL );
+		if ( !windowP ){
+			// It didn't work, so try to give a useful error:
+			printf( "Cannot create a window in which to draw!\n" );
+			fflush( stdout );
+			exit( 1 );
+		}
+
+		ofVkRenderer::Settings rendererSettings;
+		rendererSettings.numSwapchainImages = _settings.numSwapchainImages;
+		rendererSettings.numVirtualFrames   = _settings.numVirtualFrames;
+		rendererSettings.swapchainType      = _settings.swapchainType;
+		rendererSettings.vkVersion          = _settings.vkVersion;
+		rendererSettings.useDebugLayers     = _settings.useDebugLayers;
+
+		currentRenderer = shared_ptr<ofBaseRenderer>( new ofVkRenderer( this, rendererSettings ) );
+		auto vkRenderer = dynamic_pointer_cast<ofVkRenderer>( currentRenderer );
+		// we have a renderer.
+
+		// now we need to create a window surface
+		// this stores the window surface into the renderer as a side-effect.
+		createVkSurface();
+
+		vkRenderer->setup();
+
+		//don't try and show a window if its been requsted to be hidden
+		bWindowNeedsShowing = settings.visible;
+
+		// set the user window pointer
+		glfwSetWindowUserPointer( windowP, this );
+
+		// write the window size back in our settings 
+		glfwGetWindowSize( windowP, &settings.width, &settings.height );
+
+		currentW = settings.width;
+		currentH = settings.height;
+	}
+	else{
+		ofLog() << "Vulkan not supported.";
+		ofExit();
+	}
+#else
+	// initialise OpenGL or OpenGLES backed window 
 	glfwDefaultWindowHints();
 	glfwWindowHint(GLFW_RED_BITS, settings.redBits);
 	glfwWindowHint(GLFW_GREEN_BITS, settings.greenBits);
@@ -310,7 +333,10 @@ void ofAppGLFWWindow::setup(const ofGLFWWindowSettings & _settings){
     	static_cast<ofGLRenderer*>(currentRenderer.get())->setup();
     }
 
-    setVerticalSync(true);
+	setVerticalSync( true );
+#endif // #if !(defined OF_TARGET_API_VULKAN)
+
+	// set GLFW callbacks
 	glfwSetMouseButtonCallback(windowP, mouse_cb);
 	glfwSetCursorPosCallback(windowP, motion_cb);
 	glfwSetCursorEnterCallback(windowP, entry_cb);
@@ -323,8 +349,8 @@ void ofAppGLFWWindow::setup(const ofGLFWWindowSettings & _settings){
 #endif
 }
 
-#ifdef TARGET_LINUX
 //------------------------------------------------------------
+#ifdef TARGET_LINUX
 void ofAppGLFWWindow::setWindowIcon(const string & path){
     ofPixels iconPixels;
 	ofLoadImage(iconPixels,path);
@@ -338,7 +364,7 @@ void ofAppGLFWWindow::setWindowIcon(const ofPixels & iconPixels){
 	vector<unsigned long> buffer(length);
 	buffer[0]=iconPixels.getWidth();
 	buffer[1]=iconPixels.getHeight();
-	for(int i=0;i<iconPixels.getWidth()*iconPixels.getHeight();i++){
+	for(size_t i=0;i<iconPixels.getWidth()*iconPixels.getHeight();i++){
 		buffer[i+2]  = iconPixels[i*4+3]<<24;
 		buffer[i+2] += iconPixels[i*4+0]<<16;
 		buffer[i+2] += iconPixels[i*4+1]<<8;
@@ -382,6 +408,7 @@ void ofAppGLFWWindow::draw(){
 
 	events().notifyDraw();
 
+#ifndef OF_TARGET_API_VULKAN
 	#ifdef TARGET_WIN32
 	if (currentRenderer->getBackgroundAuto() == false){
 		// on a PC resizing a window with this method of accumulation (essentially single buffering)
@@ -414,8 +441,8 @@ void ofAppGLFWWindow::draw(){
 		} else{
 			glFlush();
 		}
-	#endif
-
+	#endif	  //   #ifdef TARGET_WIN32
+#endif	 // 	#ifndef OF_TARGET_API_VULKAN
 	currentRenderer->finishRender();
 
 	nFramesSinceWindowResized++;
@@ -423,9 +450,13 @@ void ofAppGLFWWindow::draw(){
 
 
 //--------------------------------------------
-void ofAppGLFWWindow::swapBuffers() {
-	glfwSwapBuffers(windowP);
+	
+#ifndef OF_TARGET_API_VULKAN
+void ofAppGLFWWindow::swapBuffers(){
+	// OpenGL/GLES uses glfw to handle swapBuffers
+	glfwSwapBuffers( windowP );
 }
+#endif
 
 //--------------------------------------------
 void ofAppGLFWWindow::startRender() {
@@ -578,8 +609,10 @@ void ofAppGLFWWindow::setWindowShape(int w, int h){
 			setWindowPosition(pos.x, pos.y);
 		}
 	#else
-		glfwSetWindowSize(windowP,currentW,currentH);
-	#endif
+        #ifndef OF_TARGET_API_VULKAN
+	        glfwSetWindowSize(windowP,currentW,currentH);
+        #endif
+    #endif
 }
 
 //------------------------------------------------------------
@@ -1315,6 +1348,9 @@ void ofAppGLFWWindow::resize_cb(GLFWwindow* windowP_,int w, int h) {
 	}
 	instance->currentW = w;
 	instance->currentH = h;
+#ifdef OF_TARGET_API_VULKAN
+	dynamic_pointer_cast<ofVkRenderer>(instance->renderer())->resizeScreen( w, h );
+#endif
 	instance->events().notifyWindowResized(w*instance->pixelScreenCoordScale, h*instance->pixelScreenCoordScale);
 	instance->nFramesSinceWindowResized = 0;
 }
@@ -1399,11 +1435,29 @@ void ofAppGLFWWindow::iconify(bool bIconify){
 		glfwRestoreWindow(windowP);
 }
 
+#ifdef OF_TARGET_API_VULKAN
+// Vulkan
+//------------------------------------------------------------
+VkResult ofAppGLFWWindow::createVkSurface(){
+	// create a window surface for this window, 
+	// and store the pointer to it with the renderer.
+	auto r = dynamic_pointer_cast<ofVkRenderer>( currentRenderer );
+	return glfwCreateWindowSurface( r->getInstance(), windowP, VK_NULL_HANDLE, reinterpret_cast<VkSurfaceKHR*>( &( r->getWindowSurface() ) ) );
+}
 
+//------------------------------------------------------------
+const VkSurfaceKHR& ofAppGLFWWindow::getVkSurface(){
+	auto r = dynamic_pointer_cast<ofVkRenderer>( currentRenderer );
+	return r->getWindowSurface();
+};
+#endif // OF_TARGET_API_VULKAN
 
+#ifndef OF_TARGET_API_VULKAN
+// OpenGL/OpenGLES
 void ofAppGLFWWindow::makeCurrent(){
 	glfwMakeContextCurrent(windowP);
 }
+#endif // !OF_TARGET_API_VULKAN
 
 #if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
 Display* ofAppGLFWWindow::getX11Display(){

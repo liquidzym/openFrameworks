@@ -21,20 +21,9 @@
 
 #include "ofMainLoop.h"
 
-#if !defined( TARGET_OF_IOS ) & !defined(TARGET_ANDROID) & !defined(TARGET_EMSCRIPTEN) & !defined(TARGET_RASPBERRY_PI)
-	#include "ofAppGLFWWindow.h"
-	//special case so we preserve supplied settngs
-	//TODO: remove me when we remove the ofAppGLFWWindow setters.
-	//--------------------------------------
-	void ofSetupOpenGL(shared_ptr<ofAppGLFWWindow> windowPtr, int w, int h, ofWindowMode screenMode){
-		ofInit();
-		auto settings = windowPtr->getSettings();
-		settings.width = w;
-		settings.height = h;
-		settings.windowMode = screenMode;
-		ofGetMainLoop()->addWindow(windowPtr);
-		windowPtr->setup(settings);
-	}
+
+#ifdef TARGET_LINUX
+#include "ofGstUtils.h"
 #endif
 
 // adding this for vc2010 compile: error C3861: 'closeQuicktime': identifier not found
@@ -251,6 +240,12 @@ void ofExitCallback(){
 
 	#ifdef WIN32_HIGH_RES_TIMING
 		timeEndPeriod(1);
+	#endif
+
+	//------------------------
+	// try to close gstreamer
+	#ifdef TARGET_LINUX
+		ofGstUtils::quitGstMainLoop();
 	#endif
 
 	//------------------------

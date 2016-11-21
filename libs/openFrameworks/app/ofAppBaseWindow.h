@@ -128,3 +128,20 @@ public:
 		}
 	}
 };
+
+class ofAppBaseVkWindow : public ofAppBaseWindow
+{
+public:
+	virtual ~ofAppBaseVkWindow(){
+	}
+	virtual void setup( const ofVkWindowSettings & settings ) = 0;
+	void setup( const ofWindowSettings & settings ){
+		const ofVkWindowSettings * vkSettings = dynamic_cast<const ofVkWindowSettings*>( &settings );
+		if ( vkSettings ){
+			setup( *vkSettings );
+		}
+		else{
+			setup( ofVkWindowSettings( settings ) );
+		}
+	}
+};

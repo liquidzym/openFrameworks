@@ -133,12 +133,12 @@ fi
 
 #check if glfw3 exists
 apt-cache show libglfw3-dev
-exit_code=$?
+exit_code=1
 if [ $exit_code = 0 ]; then
     GLFW_PKG=libglfw3-dev
 else
     echo installing glfw from source
-    GLFW_VER=32f38b97d544eb2fd9a568e94e37830106417b51
+    GLFW_VER=4888d7d410f3a613dbf8d8e24d3bf7ad61042a12
 
     # tools for git use
     GLFW_GIT_TAG=$GLFW_VER

@@ -215,7 +215,7 @@ endif
 #   generation.
 #
 #   Each item in the PLATFORM_CORE_EXCLUSIONS list will be treated as a complete
-#   string unless teh user adds a wildcard (%) operator to match subdirectories.
+#   string unless the user adds a wildcard (%) operator to match subdirectories.
 #   GNU make only allows one wildcard for matching.  The second wildcard (%) is
 #   treated literally.
 #
@@ -249,6 +249,7 @@ PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/assimp/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/rtAudio/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/openssl/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/boost/%
+# PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/shaderc/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/glfw/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/curl/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/uriparser/%
@@ -270,6 +271,7 @@ endif
 ################################################################################
 
 PLATFORM_HEADER_SEARCH_PATHS =
+PLATFORM_HEADER_SEARCH_PATHS += "$(VULKAN_SDK)/include"
 
 ################################################################################
 # PLATFORM LIBRARIES
@@ -302,18 +304,20 @@ endif
 ifneq ($(PLATFORM_ARCH),armv6l)
     PLATFORM_LIBRARIES += X11
     PLATFORM_LIBRARIES += Xrandr
-    PLATFORM_LIBRARIES += Xxf86vm
+    PLATFORM_LIBRARIES += Xxf86vm 
     PLATFORM_LIBRARIES += Xi
-    PLATFORM_LIBRARIES += Xcursor
-    PLATFORM_LIBRARIES += dl
+    PLATFORM_LIBRARIES += Xinerama
+    PLATFORM_LIBRARIES += Xcursor 
+    PLATFORM_LIBRARIES += dl 
     PLATFORM_LIBRARIES += pthread
+    PLATFORM_LIBRARIES += vulkan
 endif
 
 PLATFORM_LIBRARIES += freeimage
-PLATFORM_LIBRARIES += rtaudio
 PLATFORM_LIBRARIES += boost_filesystem
 PLATFORM_LIBRARIES += boost_system
 PLATFORM_LIBRARIES += pugixml
+PLATFORM_LIBRARIES += uriparser
 
 #static libraries (fully qualified paths)
 PLATFORM_STATIC_LIBRARIES =
@@ -337,7 +341,6 @@ PLATFORM_PKG_CONFIG_LIBRARIES += sndfile
 PLATFORM_PKG_CONFIG_LIBRARIES += openal
 PLATFORM_PKG_CONFIG_LIBRARIES += openssl
 PLATFORM_PKG_CONFIG_LIBRARIES += libcurl
-PLATFORM_PKG_CONFIG_LIBRARIES += liburiparser
 
 ifeq "$(shell pkg-config --exists glfw3 && echo 1)" "1"
     PLATFORM_PKG_CONFIG_LIBRARIES += glfw3
@@ -345,7 +348,9 @@ ifeq "$(shell pkg-config --exists glfw3 && echo 1)" "1"
 endif
 
 ifeq "$(shell pkg-config --exists rtaudio && echo 1)" "1"
-	PLATFORM_PKG_CONFIG_LIBRARIES += rtaudio
+    PLATFORM_PKG_CONFIG_LIBRARIES += rtaudio
+else    
+    PLATFORM_LIBRARIES += rtaudio
 endif
 
 
@@ -391,6 +396,7 @@ endif
 ################################################################################
 
 PLATFORM_LIBRARY_SEARCH_PATHS =
+PLATFORM_LIBRARY_SEARCH_PATHS += $(VULKAN_SDK)/lib
 
 ################################################################################
 # PLATFORM FRAMEWORKS
