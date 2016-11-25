@@ -153,7 +153,9 @@ static FT_Library library;
 //--------------------------------------------------------
 void ofTrueTypeShutdown(){
 #ifdef TARGET_LINUX
-	FcFini();
+	// This crashes if gtk was called at any time cause pango leaks
+	// its fc related objects: https://github.com/openframeworks/openFrameworks/issues/5061
+	//FcFini();
 #endif
 }
 
@@ -1336,7 +1338,7 @@ ofTexture ofTrueTypeFont::getStringTexture(const std::string& str, bool vflip) c
 		}
 	}
 	tex.allocate(totalPixels);
-    return std::move(tex);
+	return tex;
 }
 
 //-----------------------------------------------------------

@@ -3,11 +3,11 @@
 #include "ofTypes.h"
 #include "ofGraphics.h"
 #include "FreeImage.h"
+#include "ofConstants.h"
 
-#if OF_USE_POCO
-	#include "ofURLFileLoader.h"
-	#include "Poco/URI.h"
-#endif
+#include "ofURLFileLoader.h"
+#include "uriparser/Uri.h"
+
 #if defined(TARGET_ANDROID)
 #include "ofxAndroidUtils.h"
 #endif
@@ -184,18 +184,20 @@ template<typename PixelType>
 static bool loadImage(ofPixels_<PixelType> & pix, const std::filesystem::path& _fileName, const ofImageLoadSettings& settings){
 	ofInitFreeImage();
 
-#if OF_USE_POCO
-	Poco::URI uri;
-	try {
-        uri = Poco::URI(_fileName.string());
-	} catch(const std::exception & exc){
-		ofLogError("ofImage") << "loadImage(): malformed uri when loading image from uri \"" << _fileName << "\": " << exc.what();
+	UriParserStateA state;
+	UriUriA uri;
+	auto uriStr = _fileName.string();
+	state.uri = &uri;
+	if(uriParseUriA(&state, uriStr.c_str())!=URI_SUCCESS){
+		ofLogError("ofImage") << "loadImage(): malformed uri when loading image from uri " << _fileName;
+		uriFreeUriMembersA(&uri);
 		return false;
 	}
-	if(uri.getScheme() == "http" || uri.getScheme() == "https"){
-        return ofLoadImage(pix, ofLoadURL(_fileName.string()).data);
+	std::string scheme(uri.scheme.first, uri.scheme.afterLast);
+	uriFreeUriMembersA(&uri);
+	if(scheme == "http" || scheme == "https"){
+		return ofLoadImage(pix, ofLoadURL(_fileName.string()).data);
 	}
-#endif
 	
 	std::string fileName = ofToDataPath(_fileName);
 	bool bLoaded = false;

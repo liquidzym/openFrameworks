@@ -30,6 +30,28 @@ download(){
     wget ci.openframeworks.cc/libs/$1
 }
 
+# trap any script errors and exit
+trap 'trapError ${LINENO}' ERR
+trap "trapError" SIGINT SIGTERM
+
+trapError() { 
+    local parent_lineno="$1"
+    if [[ "$#" = "3" ]] ; then
+        local message="$2"
+        local code="${3:-1}"
+        echo "Error on or near line ${parent_lineno}: ${message}; exiting with status ${code}"
+    else
+        local code="${2:-1}"
+        echo "Error on or near line ${parent_lineno}; exiting with status ${code}"
+    fi
+    
+    if [ -e openFrameworksLibs* ]; then
+        echo "removing packages"
+    	rm openFrameworksLibs*
+    fi
+    exit "${code}"
+}
+
 
 while [[ $# -gt 0 ]]; do
     key="$1"
@@ -79,11 +101,13 @@ if [ "$ARCH" == "" ]; then
     if [ "$PLATFORM" == "linux" ]; then
         ARCH=$(uname -m)
         if [ "$ARCH" == "x86_64" ]; then
-            GCC_MAJOR_GT_4=$(expr `gcc -dumpversion | cut -f1 -d.` \> 4)
-            if [ $GCC_MAJOR_GT_4 -eq 1 ]; then
+            GCC_VERSION=$(gcc -dumpversion | cut -f1 -d.)
+            if [ $GCC_VERSION -eq 4 ]; then
+                ARCH=64
+            elif [ $GCC_VERSION -eq 5]; then
                 ARCH=64gcc5
             else
-                ARCH=64
+                ARCH=64gcc6
             fi
         elif [ "$ARCH" == "i686" ] || [ "$ARCH" == "i386" ]; then
             cat << EOF
@@ -106,7 +130,7 @@ if [ "$ARCH" == "" ] && [ "$PLATFORM" == "vs" ]; then
 elif [ "$PLATFORM" == "msys2" ] || [ "$PLATFORM" == "vs" ]; then
     PKGS="openFrameworksLibs_${VER}_${PLATFORM}${ARCH}.zip"
 elif [ "$ARCH" == "" ] && [[ "$PLATFORM" == "osx" || "$PLATFORM" == "ios" || "$PLATFORM" == "tvos" ]]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}1.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}2.tar.bz2"
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}1.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}2.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}3.tar.bz2"
 elif [ "$ARCH" == "" ] && [ "$PLATFORM" == "android" ]; then
     PKGS="openFrameworksLibs_${VER}_${PLATFORM}armv7.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}x86.tar.bz2"
 else
@@ -123,7 +147,7 @@ cd libs
 
 if [ $OVERWRITE -eq 1 ]; then
     echo "Removing old libraries"
-    libs=("boost" "cairo" "curl" "FreeImage" "freetype" "glew" "glfw" "json" "libpng" "openssl" "pixman" "poco" "rtAudio" "tess2" "uriparser" "utf8" "videoInput" "zlib" "README.md")
+    libs=("boost" "cairo" "curl" "FreeImage" "freetype" "glew" "glfw" "json" "libpng" "openssl" "pixman" "poco" "rtAudio" "tess2" "uriparser" "utf8" "videoInput" "zlib" "opencv" "ippicv" "assimp" "libxml2" "svgtiny" "README.md")
     for lib in $libs; do
         if [ -e $lib ]; then
             rm -rf $lib
@@ -141,3 +165,25 @@ for PKG in $PKGS; do
         rm ../scripts/dev/$PKG
     fi
 done
+
+if [[ "$PLATFORM" == "osx" || "$PLATFORM" == "ios" || "$PLATFORM" == "tvos" ]]; then
+    addonslibs=("opencv" "ippicv" "assimp" "libxml2" "svgtiny" "poco" "openssl")
+    addons=("ofxOpenCv" "ofxOpenCv" "ofxAssimpModelLoader" "ofxSvg" "ofxSvg" "ofxPoco" "ofxPoco")
+else
+    addonslibs=("opencv" "ippicv" "assimp" "libxml2" "svgtiny" "poco")
+    addons=("ofxOpenCv" "ofxOpenCv" "ofxAssimpModelLoader" "ofxSvg" "ofxSvg" "ofxPoco")
+fi
+
+for ((i=0;i<${#addonslibs[@]};++i)); do
+    if [ -e ${addonslibs[i]} ]; then
+        echo "Copying ${addonslibs[i]} to ${addons[i]}"
+        if [ $OVERWRITE -eq 1 ] && [ -e ../addons/${addons[i]}/libs/${addonslibs[i]} ]; then
+            echo "Removing old opencv libraries"
+            rm -rf ../addons/${addons[i]}/libs/${addonslibs[i]}
+        fi
+        mkdir -p ../addons/${addons[i]}/libs/${addonslibs[i]}
+        rsync -a ${addonslibs[i]}/ ../addons/${addons[i]}/libs/${addonslibs[i]}
+        rm -rf ${addonslibs[i]}
+    fi
+done
+

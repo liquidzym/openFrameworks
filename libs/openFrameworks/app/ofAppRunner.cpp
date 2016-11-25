@@ -17,9 +17,7 @@
 #include "ofGLProgrammableRenderer.h"
 #include "ofTrueTypeFont.h"
 
-#if OF_USE_POCO
 #include "ofURLFileLoader.h"
-#endif
 
 #include "ofMainLoop.h"
 
@@ -37,6 +35,10 @@
 		ofGetMainLoop()->addWindow(windowPtr);
 		windowPtr->setup(settings);
 	}
+#endif
+
+#ifdef TARGET_LINUX
+#include "ofGstUtils.h"
 #endif
 
 // adding this for vc2010 compile: error C3861: 'closeQuicktime': identifier not found
@@ -231,9 +233,7 @@ void ofExitCallback(){
 
 
 	// finish every library and subsystem
-	#if OF_USE_POCO
-		ofURLFileLoaderShutdown();
-	#endif
+	ofURLFileLoaderShutdown();
 
 	#ifndef TARGET_NO_SOUND
 		//------------------------
@@ -255,6 +255,12 @@ void ofExitCallback(){
 
 	#ifdef WIN32_HIGH_RES_TIMING
 		timeEndPeriod(1);
+	#endif
+
+	//------------------------
+	// try to close gstreamer
+	#ifdef TARGET_LINUX
+		ofGstUtils::quitGstMainLoop();
 	#endif
 
 	//------------------------
