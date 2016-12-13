@@ -12,10 +12,16 @@ platform=$1
 version=$2
 of_root=$(readlink -f "$(dirname "$(readlink -f "$0")")/../..")
 
-if [ $# -eq 3 ]; then
-branch=$3
+if [ $# -ge 3 ]; then
+    branch=$3
 else
-branch=stable
+    branch=stable
+fi
+
+if [ $# -ge 4 ]; then
+    libs_abi=$4
+else
+    libs_abi=""
 fi
 
 REPO=../..
@@ -51,7 +57,7 @@ echo
 echo
 echo
 echo --------------------------------------------------------------------------
-echo "Creating package $version for $platform"
+echo "Creating package $version for $platform $libs_abi"
 echo --------------------------------------------------------------------------
 echo
 
@@ -152,8 +158,8 @@ function createPackage {
     
     #remove previously created package 
     cd $pkg_ofroot/..
-	rm -Rf of_v${pkg_version}_${pkg_platform}.*
-	rm -Rf of_v${pkg_version}_${pkg_platform}_*
+	rm -Rf of_v${pkg_version}_${pkg_platform}${libs_abi}.*
+	rm -Rf of_v${pkg_version}_${pkg_platform}${libs_abi}_*
     echo "Creating package $pkg_platform $version in $pkg_ofroot"
     
     #remove devApps folder
@@ -380,7 +386,7 @@ function createPackage {
         scripts/osx/download_libs.sh
         scripts/emscripten/download_libs.sh -n
     elif [ "$pkg_platform" = "linux64" ]; then
-        scripts/linux/download_libs.sh -a 64
+        scripts/linux/download_libs.sh -a 64$libs_abi
         scripts/emscripten/download_libs.sh -n
     elif [ "$pkg_platform" = "linuxarmv6l" ]; then
         scripts/linux/download_libs.sh -a armv6l
@@ -522,12 +528,12 @@ function createPackage {
     
     #create compressed package
     if [ "$pkg_platform" = "linux" ] || [ "$pkg_platform" = "linux64" ] || [ "$pkg_platform" = "android" ] || [ "$pkg_platform" = "linuxarmv6l" ] || [ "$pkg_platform" = "linuxarmv7l" ]; then
-        echo "compressing package to of_v${pkg_version}_${pkg_platform}_release.tar.gz"
+        echo "compressing package to of_v${pkg_version}_${pkg_platform}${libs_abi}_release.tar.gz"
         cd $pkg_ofroot/..
-        mkdir of_v${pkg_version}_${pkg_platform}_release
-        mv ${pkgfolder}/* of_v${pkg_version}_${pkg_platform}_release
-        COPYFILE_DISABLE=true tar czf of_v${pkg_version}_${pkg_platform}_release.tar.gz of_v${pkg_version}_${pkg_platform}_release
-        rm -Rf of_v${pkg_version}_${pkg_platform}_release
+        mkdir of_v${pkg_version}_${pkg_platform}${libs_abi}_release
+        mv ${pkgfolder}/* of_v${pkg_version}_${pkg_platform}${libs_abi}_release
+        COPYFILE_DISABLE=true tar czf of_v${pkg_version}_${pkg_platform}${libs_abi}_release.tar.gz of_v${pkg_version}_${pkg_platform}${libs_abi}_release
+        rm -Rf of_v${pkg_version}_${pkg_platform}${libs_abi}_release
     else
         echo "compressing package to of_v${pkg_version}_${pkg_platform}_release.zip"
         cd $pkg_ofroot/..
