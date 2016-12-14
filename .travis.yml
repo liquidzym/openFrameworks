@@ -1,6 +1,10 @@
 language: c++
 compiler: gcc
 sudo: true
+env:
+  global:
+    secure: LBTN8d1hS7ocrqDwxLQqU0tfK3FMCXBI8q1yASEjtkp/v5HEyFkbj22H4jXZ20SkpCTlIG2L6i/fU3d6KzJUzTFuxkQEWsnjkj4jAhxGEWRsT1RV6VcUPQDGLHapXwTy+ZYgMNxE7aAdQaBskPHdVzAhjrzlTwVuKp6KjFn+kMU=
+
 matrix:
   include:
   # fully specify builds, include can't dynamically expand matrix entries
@@ -9,7 +13,7 @@ matrix:
   - os: linux
     dist: trusty
     sudo: required
-    env: TARGET="linux"
+    env: TARGET="linux64"
     addons:
       apt:
         sources:
@@ -87,7 +91,7 @@ install:
   - if [ -f scripts/ci/$TARGET/install.sh ]; then
         scripts/ci/$TARGET/install.sh;
     fi
-  - if [ "$TARGET" == "linux" ]; then
+  - if [ "$TARGET" == "linux64" ]; then
         scripts/linux/download_libs.sh -a 64;
     elif [ "$TARGET" == "linuxarmv6l" ]; then
         scripts/linux/download_libs.sh -a armv6l;
@@ -102,9 +106,10 @@ install:
 
 script:
   - scripts/ci/$TARGET/build.sh $OPT
-  - if [ "$TARGET" == "osx" ] || [ "$TARGET" == "linux" ]; then
+  - if [ "$TARGET" == "osx" ] || [ "$TARGET" == "linux64" ]; then
       scripts/ci/$TARGET/run_tests.sh;
     fi
+  - scripts/ci/upload_of_lib.sh
 
 git:
   depth: 10
