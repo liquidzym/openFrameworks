@@ -1,10 +1,13 @@
 #!/bin/bash
-#set -e
-#set -o pipefail
+set -e
+set -o pipefail
 # trap any script errors and exit
 trap "trapError" ERR
+age () { stat=$(stat --printf="%Y %F\n" "$1"); echo $((($(date +%s) - ${stat%% *})/86400)); }
+
 
 SUDO=
+ROOT=$( cd "$(dirname "$0")" ; pwd -P )
 
 trapError() {
 	echo
@@ -20,7 +23,12 @@ createArchImg(){
     #sudo apt-get install -y libgssapi-krb5-2 libkrb5-3 libidn11
     #sudo ./arch-bootstrap.sh archlinux
     
-    ./arch-bootstrap_downloadonly.sh -a armv7h -r "http://eu.mirror.archlinuxarm.org/" archlinux
+    if [ ! "$(ls -A ~/archlinux)" ] || [ $(age ~/archlinux/timestamp) -gt 7 ]; then
+        $ROOT/arch-bootstrap_downloadonly.sh -a armv7h -r "http://eu.mirror.archlinuxarm.org/" ~/archlinux
+        touch ~/archlinux/timestamp
+    else
+        echo "Using cached archlinux image"
+    fi
 }
 
 downloadToolchain(){
@@ -37,11 +45,14 @@ downloadToolchain(){
 }
 
 downloadFirmware(){
-    wget https://github.com/raspberrypi/firmware/archive/master.zip -O firmware.zip
-    unzip firmware.zip
-    ${SUDO} cp -r firmware-master/opt archlinux/
-    rm -r firmware-master
-    rm firmware.zip
+    if [ "$(ls -A ~/firmware-master)" ]; then
+        echo "Using cached RPI2 firmware-master"
+    else
+        cd ~
+        wget https://github.com/raspberrypi/firmware/archive/master.zip -O firmware.zip
+        unzip firmware.zip
+    fi
+    ${SUDO} cp -r ~/firmware-master/opt archlinux/
 }
 
 
@@ -65,16 +76,34 @@ relativeSoftLinks(){
     done
 }
 
+installRtAudio(){
+    #cd $ROOT
+    #wget http://www.music.mcgill.ca/~gary/rtaudio/release/rtaudio-4.1.1.tar.gz
+    #tar xzf rtaudio-4.1.1.tar.gz
+    #cd rtaudio-4.1.1
+    #./configure --host=${GCC_PREFIX}
+    #sed -i "s|CFLAGS[ ]*=\(.*\)|CFLAGS = ${CFLAGS} \1|g" Makefile 
+    #perl -p -i -e 's|\$\(CC\) (?!\$\(CFLAGS\))|\$(CC) \$(CFLAGS) |g' Makefile
 
+    #make
+    #cp RtAudio.h ${RPI_ROOT}/usr/local/include/
+    #cp *.a ${RPI_ROOT}/usr/local/lib/
+    #cd $ROOT
+    #rm rtaudio-4.1.1.tar.gz
+    #rm -r rtaudio-4.1.1
+    cd ~/archlinux
+    wget http://ci.openframeworks.cc/rtaudio-armv7hf.tar.bz2
+    tar xjf rtaudio-armv7hf.tar.bz2
+    rm rtaudio-armv7hf.tar.bz2
+}
 
-ROOT=$( cd "$(dirname "$0")" ; pwd -P )
 echo $ROOT
-cd $ROOT
 createArchImg
 downloadToolchain
 downloadFirmware
+installRtAudio
 
-cd $ROOT/archlinux/usr/lib
+cd ~/archlinux/usr/lib
 relativeSoftLinks "../.." "..\/.."
 #cd $ROOT/archlinux/usr/lib/arm-unknown-linux-gnueabihf
 #relativeSoftLinks  "../../.." "..\/..\/.."
