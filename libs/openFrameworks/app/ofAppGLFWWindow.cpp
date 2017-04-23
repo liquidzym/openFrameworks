@@ -17,6 +17,7 @@
 		#define GLFW_EXPOSE_NATIVE_EGL
 	#endif
 	#include <X11/extensions/Xrandr.h>
+	#include <X11/XKBlib.h>
 	#include "GLFW/glfw3native.h"
 	#include <X11/Xatom.h>
 	#include <xcb/xcb.h>
@@ -315,11 +316,28 @@ void ofAppGLFWWindow::setup(const ofGLFWWindowSettings & _settings){
 	glfwSetCursorPosCallback(windowP, motion_cb);
 	glfwSetCursorEnterCallback(windowP, entry_cb);
 	glfwSetKeyCallback(windowP, keyboard_cb);	
+	glfwSetCharCallback(windowP, char_cb);
 	glfwSetWindowSizeCallback(windowP, resize_cb);
 	glfwSetWindowCloseCallback(windowP, exit_cb);
 	glfwSetScrollCallback(windowP, scroll_cb);
 #if GLFW_VERSION_MAJOR>3 || GLFW_VERSION_MINOR>=1
 		glfwSetDropCallback( windowP, drop_cb );
+#endif
+
+
+#ifdef TARGET_LINUX
+	XSetLocaleModifiers("");
+	xim = XOpenIM(getX11Display(), 0, 0, 0);
+	if(!xim){
+		// fallback to internal input method
+		XSetLocaleModifiers("@im=none");
+		xim = XOpenIM(getX11Display(), 0, 0, 0);
+	}
+	xic = XCreateIC(xim,
+							XNInputStyle,   XIMPreeditNothing | XIMStatusNothing,
+							XNClientWindow, getX11Window(),
+							XNFocusWindow,  getX11Window(),
+						NULL);
 #endif
 }
 
@@ -1063,11 +1081,46 @@ void ofAppGLFWWindow::error_cb(int errorCode, const char* errorDescription){
 	ofLogError("ofAppGLFWWindow") << errorCode << ": " << errorDescription;
 }
 
-//------------------------------------------------------------
 
-unsigned long keycodeToUnicode(ofAppGLFWWindow * window, int keycode, int scancode, int modifier){
+namespace{
+unsigned long keycodeToUnicode(ofAppGLFWWindow * window, int scancode, int modifier){
 #ifdef TARGET_LINUX
-	return XKeycodeToKeysym(window->getX11Display(), scancode, modifier);
+	XkbStateRec xkb_state = {};
+	XkbGetState(window->getX11Display(), XkbUseCoreKbd, &xkb_state);
+	XEvent ev = {0};
+	ev.xkey.keycode = scancode;
+	ev.xkey.state = xkb_state.mods;
+	ev.xkey.display = window->getX11Display();
+	ev.xkey.type = KeyPress;
+	KeySym keysym = NoSymbol;
+	int status;
+	char buffer[32] = {0};
+	char* chars = buffer;
+	auto count = Xutf8LookupString(window->getX11XIC(), &ev.xkey, chars, 31, &keysym, &status);
+	if ((count > 0 && (status == XLookupChars || status == XLookupBoth)) || status == XLookupKeySym){
+		char ** c = &chars;
+		unsigned int ch = 0, count = 0;
+		static const unsigned int offsets[] =
+		{
+			0x00000000u, 0x00003080u, 0x000e2080u,
+			0x03c82080u, 0xfa082080u, 0x82082080u
+		};
+
+		do
+		{
+			ch = (ch << 6) + (unsigned char) **c;
+			(*c)++;
+			count++;
+		} while ((**c & 0xc0) == 0x80);
+
+		if(count>6){
+			return 0;
+		}else{
+			return ch - offsets[count - 1];
+		}
+	}else{
+		return 0;
+	}
 #endif
 #ifdef TARGET_WIN32
 	static WCHAR buf[2];
@@ -1183,6 +1236,7 @@ unsigned long keycodeToUnicode(ofAppGLFWWindow * window, int keycode, int scanco
 #endif
 	return 0;
 }
+}
 
 //------------------------------------------------------------
 void ofAppGLFWWindow::keyboard_cb(GLFWwindow* windowP_, int keycode, int scancode, int action, int mods) {
@@ -1295,17 +1349,115 @@ void ofAppGLFWWindow::keyboard_cb(GLFWwindow* windowP_, int keycode, int scancod
 		case GLFW_KEY_TAB:
 			key = OF_KEY_TAB;
 			break;   
+		case GLFW_KEY_KP_0:
+			key = codepoint = '0';
+			break;
+		case GLFW_KEY_KP_1:
+			key = codepoint = '1';
+			break;
+		case GLFW_KEY_KP_2:
+			key = codepoint = '2';
+			break;
+		case GLFW_KEY_KP_3:
+			key = codepoint = '3';
+			break;
+		case GLFW_KEY_KP_4:
+			key = codepoint = '4';
+			break;
+		case GLFW_KEY_KP_5:
+			key = codepoint = '5';
+			break;
+		case GLFW_KEY_KP_6:
+			key = codepoint = '6';
+			break;
+		case GLFW_KEY_KP_7:
+			key = codepoint = '7';
+			break;
+		case GLFW_KEY_KP_8:
+			key = codepoint = '8';
+			break;
+		case GLFW_KEY_KP_9:
+			key = codepoint = '9';
+			break;
+		case GLFW_KEY_KP_DIVIDE:
+			key = codepoint = '/';
+			break;
+		case GLFW_KEY_KP_MULTIPLY:
+			key = codepoint = '*';
+			break;
+		case GLFW_KEY_KP_SUBTRACT:
+			key = codepoint = '-';
+			break;
+		case GLFW_KEY_KP_ADD:
+			key = codepoint = '+';
+			break;
+		case GLFW_KEY_KP_DECIMAL:
+			key = codepoint = '.';
+			break;
+		case GLFW_KEY_KP_EQUAL:
+			key = codepoint = '=';
+			break;
 		default:
-			codepoint = keycodeToUnicode(instance, keycode, scancode, mods);
+			codepoint = keycodeToUnicode(instance, scancode, mods);
 			key = codepoint;
 			break;
 	}
 
-	if(action == GLFW_PRESS || action == GLFW_REPEAT){
-		instance->events().notifyKeyPressed(key,keycode,scancode,codepoint);
-	}else if (action == GLFW_RELEASE){
-		instance->events().notifyKeyReleased(key,keycode,scancode,codepoint);
+	int modifiers = 0;
+	if(mods & GLFW_KEY_LEFT_SHIFT){
+		modifiers |= OF_KEY_SHIFT;
+		modifiers |= OF_KEY_LEFT_SHIFT;
 	}
+	if(mods & GLFW_KEY_RIGHT_SHIFT){
+		modifiers |= OF_KEY_SHIFT;
+		modifiers |= OF_KEY_RIGHT_SHIFT;
+	}
+	if(mods & GLFW_KEY_LEFT_ALT){
+		modifiers |= OF_KEY_ALT;
+		modifiers |= OF_KEY_LEFT_ALT;
+	}
+	if(mods & GLFW_KEY_RIGHT_ALT){
+		modifiers |= OF_KEY_ALT;
+		modifiers |= OF_KEY_RIGHT_ALT;
+	}
+	if(mods & GLFW_KEY_LEFT_CONTROL){
+		modifiers |= OF_KEY_CONTROL;
+		modifiers |= OF_KEY_LEFT_CONTROL;
+	}
+	if(mods & GLFW_KEY_RIGHT_CONTROL){
+		modifiers |= OF_KEY_CONTROL;
+		modifiers |= OF_KEY_RIGHT_CONTROL;
+	}
+	if(mods & GLFW_KEY_LEFT_CONTROL){
+		modifiers |= OF_KEY_CONTROL;
+		modifiers |= OF_KEY_LEFT_CONTROL;
+	}
+	if(mods & GLFW_KEY_RIGHT_CONTROL){
+		modifiers |= OF_KEY_CONTROL;
+		modifiers |= OF_KEY_RIGHT_CONTROL;
+	}
+	if(mods & GLFW_KEY_LEFT_SUPER){
+		modifiers |= OF_KEY_SUPER;
+		modifiers |= OF_KEY_LEFT_SUPER;
+	}
+	if(mods & GLFW_KEY_RIGHT_SUPER){
+		modifiers |= OF_KEY_SUPER;
+		modifiers |= OF_KEY_RIGHT_SUPER;
+	}
+
+	if(action == GLFW_PRESS || action == GLFW_REPEAT){
+		ofKeyEventArgs keyE(ofKeyEventArgs::Pressed,key,keycode,scancode,codepoint,modifiers);
+		instance->events().notifyKeyEvent(keyE);
+	}else if (action == GLFW_RELEASE){
+		ofKeyEventArgs keyE(ofKeyEventArgs::Released,key,keycode,scancode,codepoint,modifiers);
+		instance->events().notifyKeyEvent(keyE);
+	}
+}
+
+//------------------------------------------------------------
+void ofAppGLFWWindow::char_cb(GLFWwindow* windowP_, uint32_t key){
+	ofAppGLFWWindow * instance = setCurrent(windowP_);
+	instance->events().charEvent.notify(key);
 }
 
 //------------------------------------------------------------
@@ -1414,6 +1566,10 @@ Display* ofAppGLFWWindow::getX11Display(){
 
 Window ofAppGLFWWindow::getX11Window(){
 	return glfwGetX11Window(windowP);
+}
+
+XIC	ofAppGLFWWindow::getX11XIC(){
+	return xic;
 }
 #endif
 

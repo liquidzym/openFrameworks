@@ -44,12 +44,13 @@ public:
 	,scancode(0)
 	,codepoint(0){}
 
-	ofKeyEventArgs(Type type, int key, int keycode, int scancode, unsigned int codepoint)
+	ofKeyEventArgs(Type type, int key, int keycode, int scancode, unsigned int codepoint, int modifiers)
 	:type(type)
 	,key(key)
 	,keycode(keycode)
 	,scancode(scancode)
-	,codepoint(codepoint){
+	,codepoint(codepoint)
+	,modifiers(modifiers){
 
 	}
 
@@ -63,14 +64,22 @@ public:
 	}
 
 	Type type;
-	/// \brief For special keys, one of OF_KEY_* (@see ofConstants.h). For all other keys, the Unicode code point you'd expect if this key combo (including modifier keys that may be down) was pressed in a text editor (same as codepoint). 
+	/// For special keys, one of OF_KEY_* (@see ofConstants.h). For all other keys, the Unicode code point you'd expect if this key combo (including modifier keys that may be down) was pressed in a text editor (same as codepoint).
 	int key; 
-	/// \brief The keycode returned by the windowing system, independent of any modifier keys or keyboard layout settings. For ofAppGLFWWindow this value is one of GLFW_KEY_* (@see glfw3.h) - typically, ASCII representation of the symbol on the physical key, so A key always returns 0x41 even if shift, alt, ctrl are down. 
+	/// The keycode returned by the windowing system, independent of any modifier keys or keyboard layout settings. For ofAppGLFWWindow this value is one of GLFW_KEY_* (@see glfw3.h) - typically, ASCII representation of the symbol on the physical key, so A key always returns 0x41 even if shift, alt, ctrl are down.
 	int keycode;
-	/// \brief The raw scan code returned by the keyboard, OS and hardware specific. 
+	/// The raw scan code returned by the keyboard, OS and hardware specific.
 	int scancode;
-	/// \brief The Unicode code point you'd expect if this key combo (including modifier keys) was pressed in a text editor, or -1 for non-printable characters. 
+	/// The Unicode code point you'd expect if this key combo (including modifier keys) was pressed in a text editor, or -1 for non-printable characters.
 	uint32_t codepoint;
+
+	bool hasModifier(int modifier){
+		return modifiers & modifier;
+	}
+
+private:
+	/// Key modifiers
+	int modifiers;
 };
 
 class ofMouseEventArgs : public ofEventArgs, public glm::vec2 {
@@ -186,6 +195,14 @@ public:
 	int height;
 };
 
+class ofWindowPosEventArgs : public ofEventArgs, public glm::vec2  {
+public:
+	ofWindowPosEventArgs(){}
+
+	ofWindowPosEventArgs(int x, int y)
+	:glm::vec2(x,y){}
+};
+
 class ofMessage : public ofEventArgs{
 	public:
 		ofMessage( string msg ){
@@ -194,6 +211,11 @@ class ofMessage : public ofEventArgs{
 		string message;
 };
 		
+enum ofTimeMode{
+	System,
+	FixedRate,
+	Filtered,
+};
 
 class ofCoreEvents {
   public:
@@ -204,6 +226,7 @@ class ofCoreEvents {
 	ofEvent<ofEventArgs> 		exit;
 
 	ofEvent<ofResizeEventArgs> 	windowResized;
+	ofEvent<ofWindowPosEventArgs> 	windowMoved;
 
 	ofEvent<ofKeyEventArgs> 	keyPressed;
 	ofEvent<ofKeyEventArgs> 	keyReleased;
@@ -224,9 +247,14 @@ class ofCoreEvents {
 
 	ofEvent<ofMessage>			messageEvent;
 	ofEvent<ofDragInfo>			fileDragEvent;
+	ofEvent<uint32_t>			charEvent;
 
 	void disable();
 	void enable();
+
+	void setTimeModeSystem();
+	void setTimeModeFixedRate(uint64_t nanosecsPerFrame);
+	void setTimeModeFiltered(float alpha);
 
 	void setFrameRate(int _targetRate);
 	float getFrameRate() const;
@@ -248,7 +276,7 @@ class ofCoreEvents {
 
 	bool notifyKeyPressed(int key, int keycode=-1, int scancode=-1, uint32_t codepoint=0);
 	bool notifyKeyReleased(int key, int keycode=-1, int scancode=-1, uint32_t codepoint=0);
-	bool notifyKeyEvent(const ofKeyEventArgs & keyEvent);
+	bool notifyKeyEvent(ofKeyEventArgs & keyEvent);
 
 	bool notifyMousePressed(int x, int y, int button);
 	bool notifyMouseReleased(int x, int y, int button);
@@ -268,6 +296,7 @@ class ofCoreEvents {
 
 	bool notifyExit();
 	bool notifyWindowResized(int width, int height);
+	bool notifyWindowMoved(int x, int y);
 
 	bool notifyDragEvent(ofDragInfo info);
 
@@ -282,6 +311,13 @@ private:
 	bool bPreMouseNotSet;
 	set<int> pressedMouseButtons;
 	set<int> pressedKeys;
+
+	enum TimeMode{
+		System,
+		FixedRate,
+		Filtered,
+	} timeMode = System;
+	std::chrono::nanoseconds fixedRateTimeNanos;
 };
 
 bool ofSendMessage(ofMessage msg);

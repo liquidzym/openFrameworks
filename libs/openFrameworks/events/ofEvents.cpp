@@ -175,6 +175,20 @@ void ofCoreEvents::enable(){
 	fileDragEvent.enable();
 }
 
+void ofCoreEvents::setTimeModeSystem(){
+	timeMode = System;
+}
+
+void ofCoreEvents::setTimeModeFixedRate(uint64_t nanosecsPerFrame){
+	timeMode = FixedRate;
+	fixedRateTimeNanos = std::chrono::nanoseconds(nanosecsPerFrame);
+}
+
+void ofCoreEvents::setTimeModeFiltered(float alpha){
+	timeMode = Filtered;
+	fps.setFilterAlpha(alpha);
+}
+
 //--------------------------------------
 void ofCoreEvents::setFrameRate(int _targetRate){
 	// given this FPS, what is the amount of millis per frame
@@ -204,7 +218,16 @@ float ofCoreEvents::getTargetFrameRate() const{
 
 //--------------------------------------
 double ofCoreEvents::getLastFrameTime() const{
-	return fps.getLastFrameSecs();
+	switch(timeMode){
+		case Filtered:
+			return fps.getLastFrameFilteredSecs();
+		case FixedRate:
+			return std::chrono::duration<double>(fixedRateTimeNanos).count();
+		case System:
+		default:
+			return fps.getLastFrameSecs();
+	}
+
 }
 
 //--------------------------------------
@@ -279,82 +302,89 @@ bool ofCoreEvents::notifyDraw(){
 
 //------------------------------------------
 bool ofCoreEvents::notifyKeyPressed(int key, int keycode, int scancode, uint32_t codepoint){
-	// FIXME: modifiers are being reported twice, for generic and for left/right
-	// add operators to the arguments class so it can be checked for both
-	bool attended = false;
-    if(key == OF_KEY_RIGHT_CONTROL || key == OF_KEY_LEFT_CONTROL){
-        pressedKeys.insert(OF_KEY_CONTROL);
-        ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Pressed,OF_KEY_CONTROL);
-		attended = ofNotifyEvent( keyPressed, keyEventArgs );
-    }
-    else if(key == OF_KEY_RIGHT_SHIFT || key == OF_KEY_LEFT_SHIFT){
-        pressedKeys.insert(OF_KEY_SHIFT);
-        ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Pressed,OF_KEY_SHIFT);
-		attended = ofNotifyEvent( keyPressed, keyEventArgs );
-    }
-    else if(key == OF_KEY_LEFT_ALT || key == OF_KEY_RIGHT_ALT){
-        pressedKeys.insert(OF_KEY_ALT);
-        ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Pressed,OF_KEY_ALT);
-		attended = ofNotifyEvent( keyPressed, keyEventArgs );
-    }
-    else if(key == OF_KEY_LEFT_SUPER || key == OF_KEY_RIGHT_SUPER){
-        pressedKeys.insert(OF_KEY_SUPER);
-        ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Pressed,OF_KEY_SUPER);
-		attended = ofNotifyEvent( keyPressed, keyEventArgs );
-    }
-
-	pressedKeys.insert(key);
-	if(!attended){
-		ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Pressed,key,keycode,scancode,codepoint);
-		return ofNotifyEvent( keyPressed, keyEventArgs );
-	}else{
-		return attended;
-	}
+	ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Pressed,key,keycode,scancode,codepoint,0);
+	return notifyKeyEvent(keyEventArgs);
 }
 
 //------------------------------------------
 bool ofCoreEvents::notifyKeyReleased(int key, int keycode, int scancode, uint32_t codepoint){
-	// FIXME: modifiers are being reported twice, for generic and for left/right
-	// add operators to the arguments class so it can be checked for both
-	bool attended = false;
-    if(key == OF_KEY_RIGHT_CONTROL || key == OF_KEY_LEFT_CONTROL){
-        pressedKeys.erase(OF_KEY_CONTROL);
-        ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Released,OF_KEY_CONTROL);
-		attended = ofNotifyEvent( keyReleased, keyEventArgs );
-    }
-    else if(key == OF_KEY_RIGHT_SHIFT || key == OF_KEY_LEFT_SHIFT){
-        pressedKeys.erase(OF_KEY_SHIFT);
-        ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Released,OF_KEY_SHIFT);
-		attended = ofNotifyEvent( keyReleased, keyEventArgs );
-    }
-    else if(key == OF_KEY_LEFT_ALT || key == OF_KEY_RIGHT_ALT){
-        pressedKeys.erase(OF_KEY_ALT);
-        ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Released,OF_KEY_ALT);
-		attended = ofNotifyEvent( keyReleased, keyEventArgs );
-    }
-    else if(key == OF_KEY_LEFT_SUPER || key == OF_KEY_RIGHT_SUPER){
-        pressedKeys.erase(OF_KEY_SUPER);
-        ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Released,OF_KEY_SUPER);
-		attended = ofNotifyEvent( keyReleased, keyEventArgs );
-    }
-    
-	pressedKeys.erase(key);
-	if(!attended){
-		ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Released,key,keycode,scancode,codepoint);
-		return ofNotifyEvent( keyReleased, keyEventArgs );
-	}else{
-		return attended;
-	}
+	ofKeyEventArgs keyEventArgs(ofKeyEventArgs::Released,key,keycode,scancode,codepoint,0);
+	return notifyKeyEvent(keyEventArgs);
 }
 
 
 //------------------------------------------
-bool ofCoreEvents::notifyKeyEvent(const ofKeyEventArgs & keyEvent){
-	switch(keyEvent.type){
+bool ofCoreEvents::notifyKeyEvent(ofKeyEventArgs & e){
+	bool attended = false;
+	switch(e.type){
 		case ofKeyEventArgs::Pressed:
-			return notifyKeyPressed(keyEvent.key, keyEvent.keycode, keyEvent.scancode, keyEvent.codepoint);
+			// FIXME: modifiers are being reported twice, for generic and for left/right
+			// add operators to the arguments class so it can be checked for both
+			if(e.key == OF_KEY_RIGHT_CONTROL || e.key == OF_KEY_LEFT_CONTROL){
+				pressedKeys.insert(OF_KEY_CONTROL);
+				ofKeyEventArgs keyEventArgs = e;
+				keyEventArgs.key = OF_KEY_CONTROL;
+				attended = ofNotifyEvent( keyPressed, keyEventArgs );
+			}
+			else if(e.key == OF_KEY_RIGHT_SHIFT || e.key == OF_KEY_LEFT_SHIFT){
+				pressedKeys.insert(OF_KEY_SHIFT);
+				ofKeyEventArgs keyEventArgs = e;
+				keyEventArgs.key = OF_KEY_SHIFT;
+				attended = ofNotifyEvent( keyPressed, keyEventArgs );
+			}
+			else if(e.key == OF_KEY_LEFT_ALT || e.key == OF_KEY_RIGHT_ALT){
+				pressedKeys.insert(OF_KEY_ALT);
+				ofKeyEventArgs keyEventArgs = e;
+				keyEventArgs.key = OF_KEY_ALT;
+				attended = ofNotifyEvent( keyPressed, keyEventArgs );
+			}
+			else if(e.key == OF_KEY_LEFT_SUPER || e.key == OF_KEY_RIGHT_SUPER){
+				pressedKeys.insert(OF_KEY_SUPER);
+				ofKeyEventArgs keyEventArgs = e;
+				keyEventArgs.key = OF_KEY_SUPER;
+				attended = ofNotifyEvent( keyPressed, keyEventArgs );
+			}
+
+			pressedKeys.insert(e.key);
+			if(!attended){
+				return ofNotifyEvent( keyPressed, e );
+			}else{
+				return attended;
+			}
 		case ofKeyEventArgs::Released:
-			return notifyKeyReleased(keyEvent.key, keyEvent.keycode, keyEvent.scancode, keyEvent.codepoint);
+			// FIXME: modifiers are being reported twice, for generic and for left/right
+			// add operators to the arguments class so it can be checked for both
+			if(e.key == OF_KEY_RIGHT_CONTROL || e.key == OF_KEY_LEFT_CONTROL){
+				pressedKeys.erase(OF_KEY_CONTROL);
+				ofKeyEventArgs keyEventArgs = e;
+				keyEventArgs.key = OF_KEY_CONTROL;
+				attended = ofNotifyEvent( keyReleased, keyEventArgs );
+			}
+			else if(e.key == OF_KEY_RIGHT_SHIFT || e.key == OF_KEY_LEFT_SHIFT){
+				pressedKeys.erase(OF_KEY_SHIFT);
+				ofKeyEventArgs keyEventArgs = e;
+				keyEventArgs.key = OF_KEY_SHIFT;
+				attended = ofNotifyEvent( keyReleased, keyEventArgs );
+			}
+			else if(e.key == OF_KEY_LEFT_ALT || e.key == OF_KEY_RIGHT_ALT){
+				pressedKeys.erase(OF_KEY_ALT);
+				ofKeyEventArgs keyEventArgs = e;
+				keyEventArgs.key = OF_KEY_ALT;
+				attended = ofNotifyEvent( keyReleased, keyEventArgs );
+			}
+			else if(e.key == OF_KEY_LEFT_SUPER || e.key == OF_KEY_RIGHT_SUPER){
+				pressedKeys.erase(OF_KEY_SUPER);
+				ofKeyEventArgs keyEventArgs = e;
+				keyEventArgs.key = OF_KEY_SUPER;
+				attended = ofNotifyEvent( keyReleased, keyEventArgs );
+			}
+
+			pressedKeys.erase(e.key);
+			if(!attended){
+				return ofNotifyEvent( keyReleased, e );
+			}else{
+				return attended;
+			}
 	}
 	return false;
 }
@@ -558,6 +588,12 @@ bool ofCoreEvents::notifyExit(){
 bool ofCoreEvents::notifyWindowResized(int width, int height){
 	ofResizeEventArgs resizeEventArgs(width,height);
 	return ofNotifyEvent( windowResized, resizeEventArgs );
+}
+
+//------------------------------------------
+bool ofCoreEvents::notifyWindowMoved(int x, int y){
+	ofWindowPosEventArgs windowPosEventArgs(x,y);
+	return ofNotifyEvent( windowMoved, windowPosEventArgs );
 }
 
 //------------------------------------------
