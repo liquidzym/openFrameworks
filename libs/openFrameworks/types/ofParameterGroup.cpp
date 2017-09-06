@@ -1,6 +1,8 @@
 #include "ofUtils.h"
 #include "ofParameter.h"
 
+using namespace std;
+
 ofParameterGroup::ofParameterGroup()
 :obj(new Value)
 {
@@ -42,7 +44,9 @@ void ofParameterGroup::remove(const string &name){
 }
 
 void ofParameterGroup::clear(){
+	auto name = this->getName();
 	obj.reset(new Value);
+	setName(name);
 }
 
 string ofParameterGroup::valueType() const{

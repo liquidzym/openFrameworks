@@ -9,6 +9,8 @@
 #include <condition_variable>
 #include <mutex>
 
+using namespace std;
+
 #ifdef TARGET_WIN32
 #include <winuser.h>
 #include <commdlg.h>
@@ -92,6 +94,8 @@ static void restoreAppWindowFocus(){
 #define SAVE_BUTTON GTK_STOCK_SAVE
 #define CANCEL_BUTTON GTK_STOCK_CANCEL
 #endif
+
+using namespace std;
 
 gboolean init_gtk(gpointer userdata){
 	int argc=0; char **argv = nullptr;
